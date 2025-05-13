@@ -52,7 +52,7 @@
             </q-card-section>
 
             <!-- Card Actions -->
-            <q-card-actions align="between" class="q-px-md q-pb-md">
+            <q-card-actions align="between" class="q-px-md q-pb-md card-actions">
               <q-btn
                 :to="`/${link.path}`"
                 color="primary"
@@ -63,36 +63,40 @@
                 size="sm"
               />
 
-              <!-- Sublinks Dropdown Button -->
-              <q-btn-dropdown
-                v-if="visibleSublinks(link).length"
-                color="grey-7"
-                flat
-                :label="$t('homePage.card.viewSublinks')"
-                size="md"
-                auto-close
-                class="sublinks-dropdown"
-              >
-                <q-list class="sublinks-list">
-                  <q-item
-                    v-for="sublink in visibleSublinks(link)"
-                    :key="sublink.id"
-                    :to="`/${link.path}/${sublink.path}`"
-                    clickable
-                    v-close-popup
-                    class="sublink-item"
-                  >
-                    <q-item-section>
-                      <div class="row items-center">
-                        <div class="col ellipsis">{{ sublink.title }}</div>
-                        <q-badge color="grey-3" text-color="grey-7" class="q-ml-sm">
-                          /{{ sublink.path }}
-                        </q-badge>
-                      </div>
-                    </q-item-section>
-                  </q-item>
-                </q-list>
-              </q-btn-dropdown>
+              <div class="actions-right-container">
+                <!-- Sublinks Dropdown Button or Placeholder -->
+                <q-btn-dropdown
+                  v-if="visibleSublinks(link).length"
+                  color="grey-7"
+                  flat
+                  :label="$t('homePage.card.viewSublinks')"
+                  size="md"
+                  auto-close
+                  class="sublinks-dropdown"
+                >
+                  <q-list class="sublinks-list">
+                    <q-item
+                      v-for="sublink in visibleSublinks(link)"
+                      :key="sublink.id"
+                      :to="`/${link.path}/${sublink.path}`"
+                      clickable
+                      v-close-popup
+                      class="sublink-item"
+                    >
+                      <q-item-section>
+                        <div class="row items-center">
+                          <div class="col ellipsis">{{ sublink.title }}</div>
+                          <q-badge color="grey-3" text-color="grey-7" class="q-ml-sm">
+                            /{{ sublink.path }}
+                          </q-badge>
+                        </div>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-btn-dropdown>
+                <!-- Empty placeholder with same height when no sublinks -->
+                <div v-else class="sublinks-placeholder"></div>
+              </div>
             </q-card-actions>
           </q-card>
         </div>
@@ -186,5 +190,26 @@ onMounted(() => {
   padding: 8px;
   background-color: rgba(0, 0, 0, 0.03);
   border-radius: 4px;
+}
+
+/* New styles for card height consistency */
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px; /* Fixed height for all cards */
+}
+
+.actions-right-container {
+  display: flex;
+  justify-content: flex-end;
+  width: 130px; /* Fixed width for the right-side container */
+  height: 36px; /* Fixed height to match button */
+}
+
+.sublinks-placeholder {
+  display: block;
+  width: 100%;
+  height: 36px; /* Match button height */
 }
 </style>

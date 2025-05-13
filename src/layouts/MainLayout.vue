@@ -11,13 +11,65 @@
       Navify
     </q-toolbar-title>
 
-    <!-- testttt -->
-        <div class="q-pa-md">
-          {{ $t('hello') }}
-        </div>
-    <!-- Language Buttons -->
-    <q-btn flat label="English" @click="switchLanguage('en-US')" />
-    <q-btn flat label="العربية" @click="switchLanguage('ar')" />
+    <!-- Language Selector with Translate Icon -->
+    <q-btn-dropdown
+      flat
+      round
+      dense
+      icon="translate"
+      class="language-selector"
+    >
+      <q-list padding style="min-width: 150px">
+        <q-item-label header class="text-center">
+          {{ $t('select_language') || 'Select Language' }}
+        </q-item-label>
+
+        <q-separator spaced />
+
+        <q-item
+          clickable
+          v-close-popup
+          @click="switchLanguage('en-US')"
+          :active="locale === 'en-US'"
+          active-class="active-language"
+        >
+          <q-item-section avatar>
+            <q-avatar size="24px">
+              <img src="https://flagcdn.com/w40/us.png" alt="USA Flag">
+            </q-avatar>
+          </q-item-section>
+          <q-item-section>English</q-item-section>
+          <q-item-section side v-if="locale === 'en-US'">
+            <q-icon name="check" color="primary" size="xs" />
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          clickable
+          v-close-popup
+          @click="switchLanguage('ar')"
+          :active="locale === 'ar'"
+          active-class="active-language"
+        >
+          <q-item-section avatar>
+            <q-avatar size="24px">
+              <img src="https://flagcdn.com/w40/sa.png" alt="Saudi Arabia Flag">
+            </q-avatar>
+          </q-item-section>
+          <q-item-section>العربية</q-item-section>
+          <q-item-section side v-if="locale === 'ar'">
+            <q-icon name="check" color="primary" size="xs" />
+          </q-item-section>
+        </q-item>
+      </q-list>
+    </q-btn-dropdown>
+
+    <!-- Small indicator showing current language -->
+    <div class="current-lang-indicator q-ml-xs">
+      <q-avatar size="18px">
+        <img :src="locale === 'ar' ? 'https://flagcdn.com/w40/sa.png' : 'https://flagcdn.com/w40/us.png'">
+      </q-avatar>
+    </div>
   </q-toolbar>
 </q-header>
 
@@ -205,5 +257,34 @@ onMounted(() => {
   padding-left: 8px;
   border-left: 2px solid rgba(0, 0, 0, 0.1);
   margin-left: 24px;
+}
+
+/* Language Selector Styles */
+.language-selector {
+  position: relative;
+  margin-right: 8px;
+}
+
+.language-selector .q-btn__content i {
+  font-size: 20px;
+}
+
+.current-lang-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.active-language {
+  background-color: rgba(25, 118, 210, 0.1);
+}
+
+.q-item.active-language .q-item__section--avatar .q-avatar {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #1976d2;
 }
 </style>
