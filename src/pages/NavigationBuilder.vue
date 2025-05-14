@@ -141,11 +141,14 @@
                   <div class="col-12" v-if="linkType === 'sub'">
                     <q-select
                       v-model="formData.parentId"
-                      :options="parentLinkOptions"
+                      :options="filteredParentOptions"
                       :label="$t('navigationPage.builderCard.formFields.parent.label')"
                       outlined
                       bg-color="white"
-                      :rules="[val => !!val || $t('navigationPage.builderCard.formFields.parent.required')]"
+                      :rules="[
+                        val => !!val || $t('navigationPage.builderCard.formFields.parent.required'),
+                        val => validateParentSelection(val)
+                      ]"
                       :disable="!parentLinkOptions.length"
                       emit-value
                       map-options
@@ -153,7 +156,8 @@
                       use-input
                       fill-input
                       hide-selected
-                      input-debounce="0"
+                      input-debounce="300"
+                      @filter="filterParents"
                       class="q-mb-md"
                     >
                       <template v-slot:prepend>
@@ -462,7 +466,7 @@ const resetForm = () => {
 
 
 const handleDeleteLink = (id) => {
- 
+
   const link = findLinkById(id)
   const isMainLink = navigationLinks.value.some(l => l.id === id)
 
@@ -488,6 +492,33 @@ const handleDeleteLink = (id) => {
   }
 }
 
+// Add these to your script
+const parentFilter = ref('')
+const filteredParentOptions = ref([])
+
+const filterParents = (val, update) => {
+  if (val === '') {
+    update(() => {
+      filteredParentOptions.value = parentLinkOptions.value
+    })
+    return
+  }
+
+  const needle = val.toLowerCase()
+  update(() => {
+    filteredParentOptions.value = parentLinkOptions.value.filter(
+      v => v.label.toLowerCase().indexOf(needle) > -1
+    )
+  })
+}
+
+const validateParentSelection = (val) => {
+  if (!val) return true // This case is handled by the first rule
+
+  // Check if the selected value exists in the available parent options
+  const validParent = parentLinkOptions.value.some(option => option.value === val)
+  return validParent || t('navigationPage.builderCard.formFields.parent.invalid')
+}
 onMounted(() => {
   loadNavigation()
 })
