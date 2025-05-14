@@ -1,9 +1,9 @@
 <template>
   <q-page padding>
     <div class="page-header q-mb-lg">
-      <div class="text-h4 text-weight-medium">Navigation Builder</div>
+      <div class="text-h4 text-weight-medium">{{ $t('navigationPage.header.title') }}</div>
       <div class="text-subtitle1 text-grey-7 q-mt-sm">
-        Create and manage your custom navigation structure
+        {{ $t('navigationPage.header.subtitle') }}
       </div>
     </div>
 
@@ -12,34 +12,36 @@
       <div class="col-12 col-md-12">
         <q-card class="builder-card">
           <q-card-section class="bg-primary text-white builder-header">
-            <div class="text-h6">Create New Navigation Link</div>
-            <div class="text-caption">Design your site's navigation structure</div>
+            <div class="text-h6">{{ $t('navigationPage.builderCard.title') }}</div>
+            <div class="text-caption">{{ $t('navigationPage.builderCard.subtitle') }}</div>
           </q-card-section>
 
           <q-card-section class="q-pa-md">
             <q-form @submit.prevent="addNavigationLink" ref="navForm">
               <!-- Link Type Selection -->
               <div class="form-section q-mb-md">
-                <div class="section-label">Link Type</div>
+                <div class="section-label">{{ $t('navigationPage.builderCard.linkType.label') }}</div>
                 <br>
                 <div class="q-gutter-sm link-type-selector">
                   <q-radio
                     v-model="linkType"
                     val="main"
-                    label="Main Navigation Link"
+                    :label="$t('navigationPage.builderCard.linkType.main')"
                     color="primary"
                   >
-                    <q-tooltip>Top-level navigation item</q-tooltip>
+                    <q-tooltip>{{ $t('navigationPage.builderCard.linkType.mainTooltip') }}</q-tooltip>
                   </q-radio>
                   <q-radio
                     v-model="linkType"
                     val="sub"
-                    label="Sublink / Child Page"
+                    :label="$t('navigationPage.builderCard.linkType.sub')"
                     color="secondary"
                     :disable="!parentLinkOptions.length"
                   >
                     <q-tooltip>
-                      {{ parentLinkOptions.length ? 'Child page under a main link' : 'Create a main link first' }}
+                      {{ parentLinkOptions.length
+                        ? $t('navigationPage.builderCard.linkType.subTooltip')
+                        : $t('navigationPage.builderCard.linkType.noMainTooltip') }}
                     </q-tooltip>
                   </q-radio>
                 </div>
@@ -51,12 +53,12 @@
                   <div class="col-12">
                     <q-input
                       v-model="formData.title"
-                      label="Link Title *"
+                      :label="$t('navigationPage.builderCard.formFields.title.label')"
                       outlined
                       bg-color="white"
                       :rules="[
-                        val => !!val || 'Title is required',
-                        val => !titleExists(val) || 'A link with this title already exists'
+                        val => !!val || $t('navigationPage.builderCard.formFields.title.required'),
+                        val => !titleExists(val) || $t('navigationPage.builderCard.formFields.title.exists')
                       ]"
                       lazy-rules="ondemand"
                       class="q-mb-md"
@@ -65,7 +67,7 @@
                         <q-icon name="title" color="primary" />
                       </template>
                       <template v-slot:hint>
-                        The text displayed in navigation menus
+                        {{ $t('navigationPage.builderCard.formFields.title.hint') }}
                       </template>
                     </q-input>
                   </div>
@@ -73,12 +75,12 @@
                   <div class="col-12">
                     <q-input
                       v-model="formData.path"
-                      label="Route Path *"
+                      :label="$t('navigationPage.builderCard.formFields.path.label')"
                       outlined
                       bg-color="white"
                       :rules="[
-                        val => !!val || 'Path is required',
-                        val => /^[a-z0-9-_]+$/i.test(val) || 'Only alphanumeric characters, hyphens, and underscores allowed',
+                        val => !!val || $t('navigationPage.builderCard.formFields.path.required'),
+                        val => /^[a-z0-9-_]+$/i.test(val) || $t('navigationPage.builderCard.formFields.path.invalid'),
                         validatePathUniqueness
                       ]"
                       lazy-rules="ondemand"
@@ -93,57 +95,57 @@
                         </q-chip>
                       </template>
                       <template v-slot:hint>
-                        URL path (letters, numbers, hyphens, underscores)
+                        {{ $t('navigationPage.builderCard.formFields.path.hint') }}
                       </template>
                     </q-input>
                   </div>
 
                   <!-- Icon Selector - New Addition -->
                   <div class="col-12">
-  <q-select
-    v-model="formData.icon"
-    :options="iconOptions"
-    label="Menu Icon *"
-    outlined
-    bg-color="white"
-    :rules="[val => !!val || 'Icon is required']"
-    emit-value
-    map-options
-    lazy-rules="ondemand"
-    class="q-mb-md"
-    menu-anchor="bottom left"
-    menu-self="top left"
-  >
-    <template v-slot:prepend>
-      <q-icon name="style" color="primary" />
-    </template>
+                    <q-select
+                      v-model="formData.icon"
+                      :options="iconOptions"
+                      :label="$t('navigationPage.builderCard.formFields.icon.label')"
+                      outlined
+                      bg-color="white"
+                      :rules="[val => !!val || $t('navigationPage.builderCard.formFields.icon.required')]"
+                      emit-value
+                      map-options
+                      lazy-rules="ondemand"
+                      class="q-mb-md"
+                      menu-anchor="bottom left"
+                      menu-self="top left"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="style" color="primary" />
+                      </template>
 
-    <template v-slot:option="scope">
-      <q-item v-bind="scope.itemProps">
-        <q-item-section avatar>
-          <q-icon :name="scope.opt.value" />
-        </q-item-section>
-        <q-item-section>
-          <q-item-label>{{ scope.opt.label }}</q-item-label>
-        </q-item-section>
-      </q-item>
-    </template>
+                      <template v-slot:option="scope">
+                        <q-item v-bind="scope.itemProps">
+                          <q-item-section avatar>
+                            <q-icon :name="scope.opt.value" />
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>{{ scope.opt.label }}</q-item-label>
+                          </q-item-section>
+                        </q-item>
+                      </template>
 
-    <template v-slot:hint>
-      Icon to display next to the link in the navigation menu
-    </template>
-  </q-select>
-</div>
+                      <template v-slot:hint>
+                        {{ $t('navigationPage.builderCard.formFields.icon.hint') }}
+                      </template>
+                    </q-select>
+                  </div>
 
                   <!-- Parent Selection (for sublinks) -->
                   <div class="col-12" v-if="linkType === 'sub'">
                     <q-select
                       v-model="formData.parentId"
                       :options="parentLinkOptions"
-                      label="Parent Link *"
+                      :label="$t('navigationPage.builderCard.formFields.parent.label')"
                       outlined
                       bg-color="white"
-                      :rules="[val => !!val || 'Parent link is required']"
+                      :rules="[val => !!val || $t('navigationPage.builderCard.formFields.parent.required')]"
                       :disable="!parentLinkOptions.length"
                       emit-value
                       map-options
@@ -158,12 +160,12 @@
                         <q-icon name="account_tree" color="primary" />
                       </template>
                       <template v-slot:hint>
-                        The main navigation link this sublink belongs to
+                        {{ $t('navigationPage.builderCard.formFields.parent.hint') }}
                       </template>
                       <template v-slot:no-option>
                         <q-item>
                           <q-item-section class="text-grey">
-                            No results
+                            {{ $t('navigationPage.builderCard.formFields.parent.noResults') }}
                           </q-item-section>
                         </q-item>
                       </template>
@@ -176,7 +178,7 @@
                   <template v-slot:avatar>
                     <q-icon name="warning" color="orange" />
                   </template>
-                  Please create a main link first before adding sublinks.
+                  {{ $t('navigationPage.builderCard.createMainFirst') }}
                 </q-banner>
               </div>
 
@@ -184,14 +186,14 @@
               <div class="row justify-end q-mt-lg q-gutter-sm">
                 <q-btn
                   outline
-                  label="Reset"
+                  :label="$t('navigationPage.builderCard.buttons.reset')"
                   color="grey-7"
                   @click="resetForm"
                   :disable="!formNotEmpty"
                 />
                 <q-btn
                   unelevated
-                  label="Add Navigation Link"
+                  :label="$t('navigationPage.builderCard.buttons.add')"
                   type="submit"
                   color="primary"
                   icon="add_link"
@@ -207,15 +209,15 @@
       <div class="col-12 col-md-12">
         <q-card class="preview-card">
           <q-card-section class="bg-secondary text-white preview-header">
-            <div class="text-h6">Navigation Preview</div>
-            <div class="text-caption">Visualize your navigation structure</div>
+            <div class="text-h6">{{ $t('navigationPage.previewCard.title') }}</div>
+            <div class="text-caption">{{ $t('navigationPage.previewCard.subtitle') }}</div>
           </q-card-section>
 
           <q-card-section>
             <div v-if="!navigationLinks.length" class="empty-state q-pa-lg text-center">
               <q-icon name="account_tree" size="4rem" color="grey-4" />
               <p class="text-grey-8 q-mt-md">
-                No navigation links created yet. Use the form to build your navigation structure.
+                {{ $t('navigationPage.previewCard.emptyState') }}
               </p>
             </div>
 
@@ -252,15 +254,17 @@
                           @click.stop="toggleLinkVisibility(link.id)"
                           :color="link.visible ? 'primary' : 'grey'"
                         >
-                          <q-tooltip>{{ link.visible ? 'Hide Link' : 'Show Link' }}</q-tooltip>
+                          <q-tooltip>{{ link.visible
+                            ? $t('navigationPage.previewCard.tooltips.hide')
+                            : $t('navigationPage.previewCard.tooltips.show') }}</q-tooltip>
                         </q-btn>
                         <q-btn
                           dense flat round
                           icon="delete"
                           color="negative"
-                          @click.stop="deleteLink(link.id)"
+                          @click.stop="handleDeleteLink(link.id)"
                         >
-                          <q-tooltip>Delete Link</q-tooltip>
+                          <q-tooltip>{{ $t('navigationPage.previewCard.tooltips.delete') }}</q-tooltip>
                         </q-btn>
                       </div>
                     </q-item-section>
@@ -270,7 +274,7 @@
                   <q-list padding>
                     <div v-if="!link.children.length" class="text-grey-7 text-center q-pa-sm">
                       <q-icon name="info" size="xs" class="q-mr-xs" />
-                      No sublinks yet. Add some using the form.
+                      {{ $t('navigationPage.previewCard.noSublinks') }}
                     </div>
                     <q-item
                       v-for="sublink in link.children"
@@ -299,15 +303,17 @@
                             @click="toggleLinkVisibility(sublink.id)"
                             :color="sublink.visible ? 'primary' : 'grey'"
                           >
-                            <q-tooltip>{{ sublink.visible ? 'Hide Link' : 'Show Link' }}</q-tooltip>
+                            <q-tooltip>{{ sublink.visible
+                              ? $t('navigationPage.previewCard.tooltips.hide')
+                              : $t('navigationPage.previewCard.tooltips.show') }}</q-tooltip>
                           </q-btn>
                           <q-btn
                             dense flat round
                             icon="delete"
                             color="negative"
-                            @click="deleteLink(sublink.id)"
+                            @click="handleDeleteLink(sublink.id)"
                           >
-                            <q-tooltip>Delete Link</q-tooltip>
+                            <q-tooltip>{{ $t('navigationPage.previewCard.tooltips.delete') }}</q-tooltip>
                           </q-btn>
                         </div>
                       </q-item-section>
@@ -327,10 +333,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useNavigation, iconOptions } from '../Functionality/useNavigation'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
 const navForm = ref(null)
-
+const { t } = useI18n()
 const {
   navigationLinks,
   addLink,
@@ -338,18 +345,19 @@ const {
   toggleLinkVisibility,
   loadNavigation,
   titleExists,
-  pathExists
+  pathExists,
+  findLinkById
 } = useNavigation()
 
 const linkType = ref('main')
 const formData = ref({
   title: '',
   path: '',
-  icon: 'link', // Default icon
+  icon: 'link',
   parentId: null
 })
 
-// Check if form has any data entered
+
 const formNotEmpty = computed(() => {
   return formData.value.title !== '' ||
     formData.value.path !== '' ||
@@ -357,7 +365,7 @@ const formNotEmpty = computed(() => {
     formData.value.parentId !== null
 })
 
-// Options for parent link dropdown
+
 const parentLinkOptions = computed(() => {
   return navigationLinks.value.map(link => ({
     label: link.title,
@@ -365,7 +373,7 @@ const parentLinkOptions = computed(() => {
   }))
 })
 
-// Get selected parent path for display in UI
+
 const selectedParentPath = computed(() => {
   if (formData.value.parentId) {
     const parentLink = navigationLinks.value.find(link => link.id === formData.value.parentId)
@@ -374,7 +382,7 @@ const selectedParentPath = computed(() => {
   return ''
 })
 
-// Helper function to get icon label from value
+
 const getIconLabel = (iconValue) => {
   const icon = iconOptions.find(opt => opt.value === iconValue);
   return icon ? icon.label : iconValue;
@@ -389,7 +397,9 @@ const addNavigationLink = () => {
 
         $q.notify({
           type: 'positive',
-          message: `${isSublink ? 'Sublink' : 'Main link'} created successfully!`,
+          message: isSublink
+            ? t('navigationPage.notifications.sublinkSuccess')
+            : t('navigationPage.notifications.mainLinkSuccess'),
           position: 'top',
           icon: 'check_circle'
         })
@@ -399,7 +409,7 @@ const addNavigationLink = () => {
         console.error('Error adding link:', error)
         $q.notify({
           type: 'negative',
-          message: error.message || 'Failed to add navigation link',
+          message: error.message || t('navigationPage.notifications.error'),
           position: 'top',
           icon: 'error'
         })
@@ -407,7 +417,7 @@ const addNavigationLink = () => {
     } else {
       $q.notify({
         type: 'warning',
-        message: 'Please fix the form errors before submitting',
+        message: t('navigationPage.notifications.formErrors'),
         position: 'top',
         icon: 'warning'
       })
@@ -415,14 +425,13 @@ const addNavigationLink = () => {
   })
 }
 
-// Add this function to your script section
+
 const validatePathUniqueness = (val) => {
-  if (!val) return true // Empty validation is handled by another rule
+  if (!val) return true
 
   const parentId = linkType.value === 'sub' ? formData.value.parentId : null
 
-  // Use your existing pathExists function with the correct parameters
-  // The third parameter (excludeId) is null since we're creating a new link
+
   if (pathExists(val, parentId, null)) {
     if (linkType.value === 'sub') {
       return 'A sublink with this path already exists under this parent'
@@ -448,6 +457,34 @@ const resetForm = () => {
 
   if (navForm.value) {
     navForm.value.resetValidation()
+  }
+}
+
+
+const handleDeleteLink = (id) => {
+ 
+  const link = findLinkById(id)
+  const isMainLink = navigationLinks.value.some(l => l.id === id)
+
+
+  const success = deleteLink(id)
+
+  if (success) {
+    $q.notify({
+      type: 'positive',
+      message: isMainLink
+        ? t('navigationPage.notifications.mainLinkDeleted', { title: link?.title })
+        : t('navigationPage.notifications.sublinkDeleted', { title: link?.title }),
+      position: 'top',
+      icon: 'check_circle'
+    })
+  } else {
+    $q.notify({
+      type: 'negative',
+      message: t('navigationPage.notifications.deleteFailed', { error: t('navigationPage.notifications.unknownError') }),
+      position: 'top',
+      icon: 'error'
+    })
   }
 }
 
@@ -542,5 +579,6 @@ onMounted(() => {
   color: #555;
 }
 /* testettst */
+
 
 </style>

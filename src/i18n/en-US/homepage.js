@@ -13,7 +13,7 @@ export default {
       noSublinks: 'No Sublinks',
       sublinksCount: '{count} Sublink | {count} Sublinks',
       visitPage: 'Visit Page',
-      viewSublinks: 'View Sublinks'
+      viewSublinks: 'view Sublinks'
     }
   }
 }

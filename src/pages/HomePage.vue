@@ -17,7 +17,7 @@
       </q-banner>
     </div>
 
-    <div class="row q-col-gutter-lg">
+    <div class="row q-col-gutter-xl">
       <!-- Navigation Links Cards -->
       <template v-for="link in visibleNavigationLinks" :key="link.id">
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
@@ -144,7 +144,9 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  min-width: 220px; /* Set a minimum width to prevent cramping */
 }
+
 
 .nav-card:hover {
   transform: translateY(-4px);
@@ -161,17 +163,18 @@ onMounted(() => {
 
 .visit-btn {
   transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 105px; /* Ensure minimum button width */
 }
-
 .visit-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .sublinks-dropdown {
-  min-width: 150px;
+  min-width: auto;
+  white-space: nowrap;
 }
-
 .sublinks-list {
   min-width: 200px;
 }
@@ -197,9 +200,10 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 52px; /* Fixed height for all cards */
+  height: 52px;
+  flex-wrap: nowrap; /* Prevent wrapping */
+  min-height: 60px; /* Give more height if needed */
 }
-
 .actions-right-container {
   display: flex;
   justify-content: flex-end;
