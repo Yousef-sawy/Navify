@@ -1,6 +1,7 @@
 import homepage from './homepage'
 import navigationPage from './navigationpage'
 import report from './report'
+import feedback from './feedback'
 
 export default {
   failed:'فشل الإجراء',
@@ -9,4 +10,5 @@ export default {
   ...homepage,
   ...navigationPage,
   ...report,
+  ...feedback
 }

@@ -108,19 +108,16 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useNavigation } from '../Functionality/useNavigation'
-import { useI18n } from 'vue-i18n'  // Add this import
+import { useI18n } from 'vue-i18n'
 
-// Add useI18n hook
 const { t } = useI18n()
 
 const { navigationLinks, loadNavigation } = useNavigation()
 
-// Filter only visible navigation links
 const visibleNavigationLinks = computed(() => {
   return navigationLinks.value.filter(link => link.visible)
 })
 
-// Helper function to get visible sublinks for a parent link
 const visibleSublinks = (parentLink) => {
   return parentLink.children.filter(sublink => sublink.visible)
 }
@@ -144,7 +141,7 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-  min-width: 220px; /* Set a minimum width to prevent cramping */
+  min-width: 220px;
 }
 
 

@@ -1,80 +1,88 @@
 <template>
   <q-layout view="hHh lpR lFf">
-   <q-header elevated class="bg-primary text-white">
-  <q-toolbar>
-    <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
+    <q-header elevated class="bg-primary text-white">
+      <q-toolbar>
+        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
 
-    <q-toolbar-title>
-      <q-avatar>
-        <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg">
-      </q-avatar>
-      Navify
-    </q-toolbar-title>
+        <q-toolbar-title>
+          <q-avatar>
+            <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg">
+          </q-avatar>
+          Navify
+        </q-toolbar-title>
 
-    <!-- Language Selector with Translate Icon -->
-    <q-btn-dropdown
-      flat
-      round
-      dense
-      icon="translate"
-      class="language-selector"
+        <!-- Language Selector with Translate Icon -->
+        <q-btn-dropdown
+          flat
+          round
+          dense
+          icon="translate"
+          class="language-selector"
+        >
+          <q-list padding style="min-width: 150px">
+            <q-item-label header class="text-center">
+              {{ $t('select_language') || 'Select Language' }}
+            </q-item-label>
+
+            <q-separator spaced />
+
+            <q-item
+              clickable
+              v-close-popup
+              @click="switchLanguage('en-US')"
+              :active="locale === 'en-US'"
+              active-class="active-language"
+            >
+              <q-item-section avatar>
+                <q-avatar size="24px">
+                  <img src="https://flagcdn.com/w40/us.png" alt="USA Flag">
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>English</q-item-section>
+              <q-item-section side v-if="locale === 'en-US'">
+                <q-icon name="check" color="primary" size="xs" />
+              </q-item-section>
+            </q-item>
+
+            <q-item
+              clickable
+              v-close-popup
+              @click="switchLanguage('ar')"
+              :active="locale === 'ar'"
+              active-class="active-language"
+            >
+              <q-item-section avatar>
+                <q-avatar size="24px">
+                  <img src="https://flagcdn.com/w40/sa.png" alt="Saudi Arabia Flag">
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>العربية</q-item-section>
+              <q-item-section side v-if="locale === 'ar'">
+                <q-icon name="check" color="primary" size="xs" />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+
+        <!-- Small indicator showing current language -->
+        <div class="current-lang-indicator q-ml-xs">
+          <q-avatar size="18px">
+            <img :src="locale === 'ar' ? 'https://flagcdn.com/w40/sa.png' : 'https://flagcdn.com/w40/us.png'">
+          </q-avatar>
+        </div>
+      </q-toolbar>
+    </q-header>
+
+    <!-- Drawer - fixed on the left -->
+    <q-drawer
+      show-if-above
+      v-model="leftDrawerOpen"
+      side="left"
+      bordered
+      :behavior="'desktop'"
+      class="fixed-drawer"
     >
-      <q-list padding style="min-width: 150px">
-        <q-item-label header class="text-center">
-          {{ $t('select_language') || 'Select Language' }}
-        </q-item-label>
-
-        <q-separator spaced />
-
-        <q-item
-          clickable
-          v-close-popup
-          @click="switchLanguage('en-US')"
-          :active="locale === 'en-US'"
-          active-class="active-language"
-        >
-          <q-item-section avatar>
-            <q-avatar size="24px">
-              <img src="https://flagcdn.com/w40/us.png" alt="USA Flag">
-            </q-avatar>
-          </q-item-section>
-          <q-item-section>English</q-item-section>
-          <q-item-section side v-if="locale === 'en-US'">
-            <q-icon name="check" color="primary" size="xs" />
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          clickable
-          v-close-popup
-          @click="switchLanguage('ar')"
-          :active="locale === 'ar'"
-          active-class="active-language"
-        >
-          <q-item-section avatar>
-            <q-avatar size="24px">
-              <img src="https://flagcdn.com/w40/sa.png" alt="Saudi Arabia Flag">
-            </q-avatar>
-          </q-item-section>
-          <q-item-section>العربية</q-item-section>
-          <q-item-section side v-if="locale === 'ar'">
-            <q-icon name="check" color="primary" size="xs" />
-          </q-item-section>
-        </q-item>
-      </q-list>
-    </q-btn-dropdown>
-
-    <!-- Small indicator showing current language -->
-    <div class="current-lang-indicator q-ml-xs">
-      <q-avatar size="18px">
-        <img :src="locale === 'ar' ? 'https://flagcdn.com/w40/sa.png' : 'https://flagcdn.com/w40/us.png'">
-      </q-avatar>
-    </div>
-  </q-toolbar>
-</q-header>
-
-    <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
-      <!--  Navigation  header-->
+      <!-- Navigation header -->
       <q-scroll-area class="fit">
         <q-list padding>
           <q-item-label header>Navigation Menu</q-item-label>
@@ -183,19 +191,27 @@
       </q-scroll-area>
     </q-drawer>
 
+    <!-- Page container - will respect RTL/LTR -->
     <q-page-container>
-      <router-view />
+      <div :class="{'rtl-container': isRtl}">
+        <router-view />
+      </div>
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useNavigation } from '../Functionality/useNavigation'
 import { useI18n } from 'vue-i18n'
 
 // Get i18n instance
 const { locale } = useI18n()
+
+// Computed property to check if we're in RTL mode
+const isRtl = computed(() => {
+  return locale.value === 'ar'
+})
 
 const leftDrawerOpen = ref(false)
 
@@ -219,8 +235,9 @@ const switchLanguage = (lang) => {
   // Save to localStorage for persistence
   localStorage.setItem('selectedLanguage', lang)
 
-  // Set RTL direction for Arabic
-  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
+  // We're NOT setting the dir on documentElement
+  // so it doesn't affect the header and drawer
+  // document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   // Optional: Add a console log to verify the change
   console.log('Language switched to:', lang)
@@ -236,10 +253,12 @@ onMounted(() => {
   const savedLang = localStorage.getItem('selectedLanguage')
   if (savedLang) {
     locale.value = savedLang
-    document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr'
+    // NOT setting document direction globally
+    // document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr'
   }
 })
 </script>
+
 <style>
 .hidden-link {
   opacity: 0.5;
@@ -286,5 +305,18 @@ onMounted(() => {
 .q-item.active-language .q-item__section--avatar .q-avatar {
   transform: scale(1.1);
   box-shadow: 0 0 0 2px white, 0 0 0 4px #1976d2;
+}
+
+/* Fixed drawer style to ensure it stays on the left */
+.fixed-drawer {
+  left: 0 !important;
+  right: auto !important;
+  transform: translateX(0) !important;
+}
+
+/* RTL container - only applies to the main content area */
+.rtl-container {
+  direction: rtl;
+  text-align: right;
 }
 </style>

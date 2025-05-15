@@ -3,9 +3,9 @@
     <div class="centered-container">
       <!-- Page Header -->
       <div class="page-header q-mb-lg">
-        <div class="text-h4 text-weight-medium">Feedback & Support</div>
+        <div class="text-h4 text-weight-medium">{{ t('feedback.title') }}</div>
         <div class="text-subtitle1 text-grey-7 q-mt-sm">
-          Create and manage your tickets
+          {{ t('feedback.subtitle') }}
         </div>
       </div>
 
@@ -14,27 +14,27 @@
         <div class="col-10 q-mb-md">
           <q-card class="form-card">
             <q-card-section class="form-header bg-primary text-white">
-              <div class="text-h6">{{ editMode ? 'Update Ticket #' + editId : 'Submit New Ticket' }}</div>
-              <div class="text-caption">{{ editMode ? 'Modify the ticket details below' : 'Tell us about your experience, issue, or suggestion' }}</div>
+              <div class="text-h6">{{ editMode ? t('feedback.form.updateTitle', {id: editId}) : t('feedback.form.title') }}</div>
+              <div class="text-caption">{{ editMode ? t('feedback.form.updateSubtitle') : t('feedback.form.subtitle') }}</div>
             </q-card-section>
 
             <q-card-section class="q-pa-md">
               <q-form @submit="onSubmit" @reset="onReset" class="q-gutter-md">
                 <!-- Ticket Type Selector -->
                 <div class="form-section">
-                  <div class="section-label">What would you like to submit?</div>
+                  <div class="section-label">{{ t('feedback.form.typeQuestion') }}</div>
                   <div class="q-gutter-md">
-                    <q-radio v-model="form.type" val="Issue" label="Report an Issue" color="negative" />
-                    <q-radio v-model="form.type" val="Feedback" label="Share Feedback" color="info" />
-                    <q-radio v-model="form.type" val="Feature Request" label="Request a Feature" color="purple" />
-                    <q-radio v-model="form.type" val="Other" label="Something Else" color="grey-8" />
+                    <q-radio v-model="form.type" val="Issue" :label="t('feedback.form.typeIssue')" color="negative" />
+                    <q-radio v-model="form.type" val="Feedback" :label="t('feedback.form.typeFeedback')" color="info" />
+                    <q-radio v-model="form.type" val="Feature Request" :label="t('feedback.form.typeFeatureRequest')" color="purple" />
+                    <q-radio v-model="form.type" val="Other" :label="t('feedback.form.typeOther')" color="grey-8" />
                   </div>
                 </div>
 
                 <!-- Priority Selector (Only for Issues) -->
                 <q-slide-transition>
                   <div v-if="form.type === 'Issue'" class="priority-section q-my-sm">
-                    <div class="section-label">How urgent is this issue?</div>
+                    <div class="section-label">{{ t('feedback.form.priorityQuestion') }}</div>
                     <div class="priority-buttons">
                       <q-btn-toggle
                         v-model="form.priority"
@@ -43,25 +43,25 @@
                         toggle-color="primary"
                         :options="[
                           {
-                            label: 'Low',
+                            label: t('feedback.form.priorityLow'),
                             value: 'Low',
                             color: 'green',
                             icon: form.priority === 'Low' ? 'check_circle' : undefined
                           },
                           {
-                            label: 'Medium',
+                            label: t('feedback.form.priorityMedium'),
                             value: 'Medium',
                             color: 'orange',
                             icon: form.priority === 'Medium' ? 'check_circle' : undefined
                           },
                           {
-                            label: 'High',
+                            label: t('feedback.form.priorityHigh'),
                             value: 'High',
                             color: 'deep-orange',
                             icon: form.priority === 'High' ? 'check_circle' : undefined
                           },
                           {
-                            label: 'Critical',
+                            label: t('feedback.form.priorityCritical'),
                             value: 'Critical',
                             color: 'negative',
                             icon: form.priority === 'Critical' ? 'check_circle' : undefined
@@ -72,16 +72,16 @@
                     </div>
                     <div class="priority-description text-caption q-mt-xs">
                       <span v-if="form.priority === 'Low'">
-                        <q-icon name="info" color="green" /> Minor issue that doesn't significantly affect usage
+                        <q-icon name="info" color="green" /> {{ t('feedback.form.priorityLowDesc') }}
                       </span>
                       <span v-else-if="form.priority === 'Medium'">
-                        <q-icon name="warning" color="orange" /> Important issue that should be addressed soon
+                        <q-icon name="warning" color="orange" /> {{ t('feedback.form.priorityMediumDesc') }}
                       </span>
                       <span v-else-if="form.priority === 'High'">
-                        <q-icon name="priority_high" color="deep-orange" /> Serious issue affecting core functionality
+                        <q-icon name="priority_high" color="deep-orange" /> {{ t('feedback.form.priorityHighDesc') }}
                       </span>
                       <span v-else-if="form.priority === 'Critical'">
-                        <q-icon name="report_problem" color="negative" /> Urgent issue requiring immediate attention
+                        <q-icon name="report_problem" color="negative" /> {{ t('feedback.form.priorityCriticalDesc') }}
                       </span>
                     </div>
                   </div>
@@ -92,14 +92,14 @@
                   <q-input
                     v-model="form.subject"
                     outlined
-                    label="Subject *"
-                    placeholder="Brief title of your feedback or issue"
+                    :label="t('feedback.form.subject') + ' *'"
+                    :placeholder="t('feedback.form.subjectPlaceholder')"
                     lazy-rules
                     bg-color="white"
                     class="subject-input"
                     :rules="[
-                      val => !!val || 'Subject is required',
-                      val => val.length <= 100 || 'Subject must be less than 100 characters'
+                      val => !!val || t('Subject is required'),
+                      val => val.length <= 100 || t('Subject must be less than 100 characters')
                     ]"
                   >
                     <template v-slot:prepend>
@@ -114,12 +114,12 @@
                     v-model="form.description"
                     type="textarea"
                     outlined
-                    label="Description *"
-                    placeholder="Please provide detailed information..."
+                    :label="t('feedback.form.description') + ' *'"
+                    :placeholder="t('feedback.form.descriptionPlaceholder')"
                     lazy-rules
                     bg-color="white"
                     rows="5"
-                    :rules="[val => !!val || 'Please provide a description']"
+                    :rules="[val => !!val || t('Please provide a description')]"
                   >
                     <template v-slot:prepend>
                       <q-icon name="description" color="primary" />
@@ -129,17 +129,17 @@
 
                 <!-- Contact Information Section -->
                 <div class="contact-section q-pa-sm q-mt-md">
-                  <div class="section-label text-primary q-mb-sm">Contact Information</div>
+                  <div class="section-label text-primary q-mb-sm">{{ t('feedback.form.contactInfo') }}</div>
                   <div class="row q-col-gutter-md">
                     <div class="col-12 col-sm-6">
                       <q-input
                         v-model="form.name"
                         outlined
-                        label="Your Name *"
-                        placeholder="John Smith"
+                        :label="t('feedback.form.name') + ' *'"
+                        :placeholder="t('feedback.form.namePlaceholder')"
                         lazy-rules
                         bg-color="white"
-                        :rules="[val => !!val || 'Name is required']"
+                        :rules="[val => !!val || t('Name is required')]"
                       >
                         <template v-slot:prepend>
                           <q-icon name="person" color="primary" />
@@ -150,14 +150,14 @@
                       <q-input
                         v-model="form.email"
                         outlined
-                        label="Email Address *"
-                        placeholder="you@example.com"
+                        :label="t('feedback.form.email') + ' *'"
+                        :placeholder="t('feedback.form.emailPlaceholder')"
                         type="email"
                         lazy-rules
                         bg-color="white"
                         :rules="[
-                          val => !!val || 'Email is required',
-                          val => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(val) || 'Please enter a valid email'
+                          val => !!val || t('Email is required'),
+                          val => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(val) || t('Please enter a valid email')
                         ]"
                       >
                         <template v-slot:prepend>
@@ -172,7 +172,7 @@
                 <div class="row justify-end q-gutter-sm q-mt-lg">
                   <q-btn
                     outline
-                    label="Cancel"
+                    :label="t('feedback.form.cancel')"
                     type="reset"
                     color="grey-7"
                     v-if="editMode"
@@ -180,7 +180,7 @@
                   />
                   <q-btn
                     outline
-                    label="Reset"
+                    :label="t('feedback.form.reset')"
                     type="reset"
                     color="warning"
                     v-else-if="formNotEmpty"
@@ -188,7 +188,7 @@
                   />
                   <q-btn
                     unelevated
-                    :label="editMode ? 'Update Ticket' : 'Submit Ticket'"
+                    :label="editMode ? t('feedback.form.update') : t('feedback.form.submit')"
                     type="submit"
                     color="primary"
                     class="q-px-md"
@@ -206,34 +206,26 @@
             <q-card-section class="table-header bg-secondary text-white">
               <div class="row items-center justify-between">
                 <div>
-                  <div class="text-h6">Ticket History</div>
-                  <div class="text-caption">View and manage all submitted tickets</div>
+                  <div class="text-h6">{{ t('feedback.table.title') }}</div>
+                  <div class="text-caption">{{ t('feedback.table.subtitle') }}</div>
                 </div>
 
-
-
-
- <!--  Print Button -->
-        <print-report
-          title="Support Tickets Report"
-          subtitle="Summary of all submitted feedback and support tickets"
-          tableTitle="Tickets List"
-          :table-data="tickets"
-          :columns="printColumns"
-          :summary-data="ticketSummary"
-          :formatters="ticketFormatters"
-          button-label="Print Report"
-          button-icon="print"
-          button-outline
-          button-color="white"
-          notes="This report includes all tickets submitted through the Feedback & Support system."
-          pdf-filename="support-tickets-report.pdf"
-        />
-
-
-
-
-
+                <!--  Print Button -->
+                <print-report
+                  :title="t('feedback.report.title')"
+                  :subtitle="t('feedback.report.subtitle')"
+                  :tableTitle="t('feedback.report.tableTitle')"
+                  :table-data="tickets"
+                  :columns="printColumns"
+                  :summary-data="ticketSummary"
+                  :formatters="ticketFormatters"
+                  :button-label="t('feedback.report.print')"
+                  button-icon="print"
+                  button-outline
+                  button-color="white"
+                  :notes="t('feedback.report.notes')"
+                  pdf-filename="support-tickets-report.pdf"
+                />
               </div>
             </q-card-section>
 
@@ -243,7 +235,7 @@
                   v-model="filter"
                   dense
                   outlined
-                  placeholder="Search tickets..."
+                  :placeholder="t('feedback.table.search')"
                   class="full-width"
                   bg-color="white"
                 >
@@ -328,10 +320,10 @@
                       <q-select
                         v-model="props.row.status"
                         :options="[
-                          { value: 'New', label: 'New', color: 'blue' },
-                          { value: 'In Progress', label: 'In Progress', color: 'orange' },
-                          { value: 'Resolved', label: 'Resolved', color: 'green' },
-                          { value: 'Closed', label: 'Closed', color: 'grey' }
+                          { value: 'New', label: t('feedback.table.status.new'), color: 'blue' },
+                          { value: 'In Progress', label: t('feedback.table.status.inProgress'), color: 'orange' },
+                          { value: 'Resolved', label: t('feedback.table.status.resolved'), color: 'green' },
+                          { value: 'Closed', label: t('feedback.table.status.closed'), color: 'grey' }
                         ]"
                         dense
                         options-dense
@@ -358,7 +350,7 @@
                           icon="visibility"
                           @click="viewTicket(props.row)"
                         >
-                          <q-tooltip>View Details</q-tooltip>
+                          <q-tooltip>{{ t('feedback.table.actions.view') }}</q-tooltip>
                         </q-btn>
                         <q-btn
                           flat
@@ -368,7 +360,7 @@
                           icon="edit"
                           @click="editTicket(props.row)"
                         >
-                          <q-tooltip>Edit</q-tooltip>
+                          <q-tooltip>{{ t('feedback.table.actions.edit') }}</q-tooltip>
                         </q-btn>
                         <q-btn
                           flat
@@ -378,7 +370,7 @@
                           icon="delete"
                           @click="confirmDelete(props.row)"
                         >
-                          <q-tooltip>Delete</q-tooltip>
+                          <q-tooltip>{{ t('feedback.table.actions.delete') }}</q-tooltip>
                         </q-btn>
                       </div>
                     </q-td>
@@ -388,7 +380,7 @@
                 <template v-slot:no-data>
                   <div class="full-width text-center q-pa-lg text-grey-8">
                     <q-icon name="inbox" size="2em" class="q-mb-sm" />
-                    <div>No tickets submitted yet.</div>
+                    <div>{{ t('feedback.table.noData') }}</div>
                   </div>
                 </template>
               </q-table>
@@ -402,7 +394,7 @@
     <q-dialog v-model="detailDialog" persistent>
       <q-card class="detail-dialog" style="width: 700px; max-width: 90vw">
         <q-card-section class="row items-center bg-primary text-white">
-          <div class="text-h6">Ticket Details</div>
+          <div class="text-h6">{{ t('feedback.details.title') }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
@@ -415,7 +407,7 @@
             <div class="col-6 col-sm-3">
               <q-card flat bordered class="ticket-info-card">
                 <q-card-section class="q-pa-sm">
-                  <div class="text-caption text-grey">Ticket ID</div>
+                  <div class="text-caption text-grey">{{ t('feedback.details.ticketId') }}</div>
                   <div class="text-weight-medium">#{{ selectedTicket.id }}</div>
                 </q-card-section>
               </q-card>
@@ -424,7 +416,7 @@
             <div class="col-6 col-sm-3">
               <q-card flat bordered class="ticket-info-card">
                 <q-card-section class="q-pa-sm">
-                  <div class="text-caption text-grey">Type</div>
+                  <div class="text-caption text-grey">{{ t('feedback.details.type') }}</div>
                   <div class="q-mt-xs">
                     <q-chip :color="getTypeColor(selectedTicket.type)" text-color="white" size="md" dense>
                       {{ selectedTicket.type }}
@@ -437,12 +429,12 @@
             <div class="col-6 col-sm-3">
               <q-card flat bordered class="ticket-info-card">
                 <q-card-section class="q-pa-sm">
-                  <div class="text-caption text-grey">Priority</div>
+                  <div class="text-caption text-grey">{{ t('feedback.details.priority') }}</div>
                   <div class="q-mt-xs">
                     <q-chip v-if="selectedTicket.priority" :color="getPriorityColor(selectedTicket.priority)" text-color="white" size="md" dense>
                       {{ selectedTicket.priority }}
                     </q-chip>
-                    <span v-else class="text-grey">N/A</span>
+                    <span v-else class="text-grey">{{ t('feedback.details.na') }}</span>
                   </div>
                 </q-card-section>
               </q-card>
@@ -451,7 +443,7 @@
             <div class="col-6 col-sm-3">
               <q-card flat bordered class="ticket-info-card">
                 <q-card-section class="q-pa-sm">
-                  <div class="text-caption text-grey">Status</div>
+                  <div class="text-caption text-grey">{{ t('feedback.details.status') }}</div>
                   <div class="q-mt-xs">
                     <q-chip :color="getStatusColor(selectedTicket.status)" text-color="white" size="md" dense>
                       {{ selectedTicket.status }}
@@ -469,12 +461,12 @@
               <!-- Submitted info section -->
               <div class="col-12">
                 <q-list bordered separator class="rounded-borders">
-                  <q-item>
+                                    <q-item>
                     <q-item-section avatar>
                       <q-icon name="person" color="primary" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label caption>Submitted By</q-item-label>
+                      <q-item-label caption>{{ t('feedback.details.submittedBy') }}</q-item-label>
                       <q-item-label>{{ selectedTicket.name }}</q-item-label>
                     </q-item-section>
                   </q-item>
@@ -484,7 +476,7 @@
                       <q-icon name="email" color="primary" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label caption>Contact Email</q-item-label>
+                      <q-item-label caption>{{ t('feedback.details.contactEmail') }}</q-item-label>
                       <q-item-label>
                         <a :href="`mailto:${selectedTicket.email}`">{{ selectedTicket.email }}</a>
                       </q-item-label>
@@ -496,7 +488,7 @@
                       <q-icon name="event" color="primary" />
                     </q-item-section>
                     <q-item-section>
-                      <q-item-label caption>Submitted On</q-item-label>
+                      <q-item-label caption>{{ t('feedback.details.submittedOn') }}</q-item-label>
                       <q-item-label>{{ formatDate(selectedTicket.createdAt, true) }}</q-item-label>
                     </q-item-section>
                   </q-item>
@@ -506,7 +498,7 @@
               <!-- Description section -->
               <div class="col-12 q-mt-md">
                 <div class="text-subtitle1 q-mb-sm">
-                  <q-icon name="description" color="primary" /> Description
+                  <q-icon name="description" color="primary" /> {{ t('feedback.details.description') }}
                 </div>
                 <q-card flat bordered class="bg-grey-1">
                   <q-card-section class="q-pa-sm" style="white-space: pre-line">
@@ -518,9 +510,9 @@
           </div>
         </q-card-section>
 
-                <q-card-actions align="right" class="q-pb-md q-pr-md">
-          <q-btn flat label="Edit" color="warning" @click="editFromDetail" v-close-popup />
-          <q-btn flat label="Close" color="primary" v-close-popup />
+        <q-card-actions align="right" class="q-pb-md q-pr-md">
+          <q-btn flat :label="t('feedback.details.edit')" color="warning" @click="editFromDetail" v-close-popup />
+          <q-btn flat :label="t('feedback.details.close')" color="primary" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -530,28 +522,33 @@
       <q-card style="min-width: 350px">
         <q-card-section class="row items-center bg-negative text-white">
           <q-avatar icon="warning" text-color="white" />
-          <span class="q-ml-sm text-subtitle1">Confirm Deletion</span>
+          <span class="q-ml-sm text-subtitle1">{{ t('feedback.delete.title') }}</span>
         </q-card-section>
 
         <q-card-section class="q-pt-lg">
-          Are you sure you want to delete ticket #{{ selectedTicket?.id }}?
-          <div class="text-caption text-grey q-mt-sm">This action cannot be undone.</div>
+          {{ t('feedback.delete.message', { id: selectedTicket?.id }) }}
+          <div class="text-caption text-grey q-mt-sm">{{ t('feedback.delete.warning') }}</div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn flat label="Delete" color="negative" @click="deleteTicket" v-close-popup />
+          <q-btn flat :label="t('feedback.delete.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('feedback.delete.confirm')" color="negative" @click="deleteTicket" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
   </div>
 </template>
 
+
 <script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { saveToLocalStorage, loadFromLocalStorage } from '../Functionality/FeedBack'
 import PrintReport from '../components/PrintReport.vue'
+
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 
 const $q = useQuasar()
 
@@ -589,14 +586,14 @@ const detailDialog = ref(false)
 const deleteDialog = ref(false)
 const selectedTicket = ref(null)
 
-// Main table columns - these remain static
+
 const columns = [
-  { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-  { name: 'type', label: 'Type', field: 'type', sortable: true, align: 'left' },
-  { name: 'subject', label: 'Subject', field: 'subject', sortable: true, align: 'left' },
-  { name: 'priority', label: 'Priority', field: 'priority', sortable: true, align: 'left' },
-  { name: 'status', label: 'Status', field: 'status', sortable: true, align: 'left' },
-  { name: 'actions', label: 'Actions', field: 'actions', align: 'center' }
+  { name: 'id', label: t('feedback.table.columns.id'), field: 'id', sortable: true, align: 'left' },
+  { name: 'type', label: t('feedback.table.columns.type'), field: 'type', sortable: true, align: 'left' },
+  { name: 'subject', label: t('feedback.table.columns.subject'), field: 'subject', sortable: true, align: 'left' },
+  { name: 'priority', label: t('feedback.table.columns.priority'), field: 'priority', sortable: true, align: 'left' },
+  { name: 'status', label: t('feedback.table.columns.status'), field: 'status', sortable: true, align: 'left' },
+  { name: 'actions', label: t('feedback.table.columns.actions'), field: 'actions', align: 'center' }
 ]
 
 const formatLabel = (key) => {
@@ -622,15 +619,14 @@ const printColumns = computed(() => {
 
   const preferredOrder = ['id', 'name','type', 'subject', 'description', 'priority', 'status', 'email', 'createdAt']
 
-  // Sort fields by preferred order, then alphabetically
+
   const sortedFields = [...allFields].sort((a, b) => {
     const aIndex = preferredOrder.indexOf(a)
     const bIndex = preferredOrder.indexOf(b)
 
-    // If both fields are in preferredOrder, sort by their position
+
     if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex
 
-    // If only one field is in preferredOrder, it comes first
     if (aIndex >= 0) return -1
     if (bIndex >= 0) return 1
 
@@ -906,7 +902,7 @@ const deleteTicket = () => {
     saveToLocalStorage(tickets.value)
 
     $q.notify({
-      color: 'negative',
+      color: 'positive',
       textColor: 'white',
       icon: 'delete',
       message: `Ticket #${selectedTicket.value.id} deleted`,
