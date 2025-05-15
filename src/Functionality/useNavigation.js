@@ -33,6 +33,7 @@ export const iconOptions = [
   { label: 'Work', value: 'work' },
   { label: 'Chat', value: 'chat' },
   { label: 'Feedback', value: 'feedback' },
+  { label: 'Print', value: 'print' }
 ]
 
 export function useNavigation() {

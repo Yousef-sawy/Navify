@@ -6,7 +6,9 @@ const routes = [
       { path: '', component: () => import('pages/HomePage.vue') },
       { path: '/link', component: () => import('src/pages/NavigationBuilder.vue') },
       { path: 'test', component: () => import('pages/TestPage.vue') },
-      { path: 'feedback', component: () => import('pages/FeedbackPage.vue') }
+      { path: 'feedback', component: () => import('pages/FeedbackPage.vue') },
+      { path: 'print', component: () => import('pages/TestPrintPage.vue') },
+
 
 
     ]

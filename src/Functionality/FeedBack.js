@@ -1,6 +1,4 @@
-// src/Functionality/FeedBack.js
 
-// LocalStorage functions
 const STORAGE_KEY = 'feedback-tickets'
 
 export const saveToLocalStorage = (tickets) => {
@@ -11,7 +9,7 @@ export const loadFromLocalStorage = () => {
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored) {
     try {
-      // Convert string dates back to Date objects
+      
       const parsedTickets = JSON.parse(stored)
       return parsedTickets.map(ticket => ({
         ...ticket,
@@ -22,7 +20,7 @@ export const loadFromLocalStorage = () => {
       return []
     }
   }
-  return [] // Make sure this return statement is added
+  return []
 }
 
 export const clearAllTickets = () => {
