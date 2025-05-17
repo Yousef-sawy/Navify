@@ -112,9 +112,9 @@
             <!-- Additional Content -->
             <slot name="additional-content"></slot>
 
-            <div v-if="notes" class="notes-section q-mt-md">
-              <div class="text-caption">Notes:</div>
-              <div class="text-caption text-grey-8">{{ notes }}</div>
+            <div v-if="notes_data" class="notes-section q-mt-md">
+              <div class="text-caption">{{ notesTitle }}</div>
+              <div class="text-caption text-grey-8">{{ notes_data }}</div>
             </div>
           </div>
         </q-card-section>
@@ -153,6 +153,8 @@ import { useQuasar } from 'quasar'
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+import amiriRegular from '../fonts/Amiri-Regular.ttf'
+
 const $q = useQuasar()
 
 // Props for component configuration
@@ -164,7 +166,8 @@ const props = defineProps({
   tableData: Array,
   columns: Array,
   summaryData: Object,
-  notes: String,
+  notesTitle: String,
+  notes_data: String,
 
   // Button appearance
   buttonColor: String,
@@ -192,6 +195,12 @@ const props = defineProps({
   rowKey: {
     type: String,
     default: 'id'
+  },
+
+  // Language options
+  rtl: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -246,7 +255,7 @@ const effectiveColumns = computed(() => {
         name: field,
         label: formatLabel(field),
         field: field,
-        align: 'left',
+        align: props.rtl ? 'right' : 'left',
         style: `width: ${columnWidth}`
       }
     })
@@ -268,13 +277,11 @@ const formatLabel = (key) => {
     .trim()
 }
 
-
 const getFormatterProps = (propsConfig, value, row) => {
   if (typeof propsConfig === 'function') {
     return propsConfig(value, row)
   } else if (typeof propsConfig === 'object') {
     const result = {}
-
 
     Object.keys(propsConfig).forEach(key => {
       if (typeof propsConfig[key] === 'function') {
@@ -312,10 +319,34 @@ const formatDate = (date, includeTime = false) => {
   }
 }
 
-const exportAsPDF = () => {
+const hasArabic = (text) => {
+  if (!text || typeof text !== 'string') return false;
+  const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  return arabicPattern.test(text);
+}
+
+// Convert fonts to base64 string
+const getBase64Font = async (fontPath) => {
+  try {
+    const response = await fetch(fontPath);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Failed to load font:', error);
+    return null;
+  }
+}
+
+const exportAsPDF = async () => {
   exporting.value = true
 
   try {
+    // Load the font data
+    const arabicFontData = await getBase64Font(amiriRegular);
 
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -323,100 +354,120 @@ const exportAsPDF = () => {
       format: 'a4'
     })
 
-    doc.setFontSize(16)
-    doc.text(props.title || 'Report', doc.internal.pageSize.width / 2, 15, { align: 'center' })
+    doc.addFileToVFS('Amiri-Regular.ttf', arabicFontData);
+    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+
+    // Set Amiri as the default font
+    doc.setFont('Amiri');
+    doc.setFontSize(21);
+
+    // Title
+    doc.text(props.title || 'Report', doc.internal.pageSize.width / 2, 15, {
+      align: 'center'
+    });
 
     if (props.subtitle) {
-      doc.setFontSize(12)
-      doc.text(props.subtitle, doc.internal.pageSize.width / 2, 22, { align: 'center' })
+      doc.setFontSize(15);
+      doc.text(props.subtitle, doc.internal.pageSize.width / 2, 24, {
+        align: 'center'
+      });
     }
 
-    doc.setFontSize(10)
-    const dateText = `Generated on: ${formatDate(new Date(), true)}`
-    doc.text(dateText, doc.internal.pageSize.width - 15, 30, { align: 'right' })
+    doc.setFontSize(10);
+    const dateText = `Generated on: ${formatDate(new Date(), true)}`;
+    doc.text(dateText, doc.internal.pageSize.width - 15, 30, { align: 'right' });
 
-    let yPosition = 35
+    let yPosition = 35;
 
     if (props.summaryData && Object.keys(props.summaryData).length) {
-      doc.setFontSize(12)
-      doc.text('Summary', 15, yPosition)
-      yPosition += 5
+      doc.setFontSize(12);
+      doc.text('Summary', 15, yPosition);
 
-      const summaryRows = []
-      const keys = Object.keys(props.summaryData)
+      yPosition += 5;
 
-      // Create rows with 2 key-value pairs per row for better layout
+      const summaryRows = [];
+      const keys = Object.keys(props.summaryData);
+
       for (let i = 0; i < keys.length; i += 2) {
-        const row = []
-        row.push(formatLabel(keys[i]))
-        row.push(props.summaryData[keys[i]])
+        const row = [];
+        row.push(formatLabel(keys[i]));
+        row.push(props.summaryData[keys[i]]);
 
         if (i + 1 < keys.length) {
-          row.push(formatLabel(keys[i + 1]))
-          row.push(props.summaryData[keys[i + 1]])
+          row.push(formatLabel(keys[i + 1]));
+          row.push(props.summaryData[keys[i + 1]]);
         } else {
-          row.push('')
-          row.push('')
+          row.push('');
+          row.push('');
         }
 
-        summaryRows.push(row)
+        summaryRows.push(row);
       }
 
-      // Using imported autoTable
       autoTable(doc, {
         startY: yPosition + 2,
         head: [['Field', 'Value', 'Field', 'Value']],
         body: summaryRows,
         theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+          font: 'Amiri',
+        },
+        headStyles: {
+          fillColor: [240, 240, 240],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          font: 'Amiri',
+        },
         margin: { left: 15, right: 15 }
-      })
+      });
 
-      yPosition = doc.lastAutoTable.finalY + 10
+      yPosition = doc.lastAutoTable.finalY + 10;
     }
 
     if (props.tableData && props.tableData.length) {
-      doc.setFontSize(12)
-      doc.text(props.tableTitle || 'Data', 15, yPosition)
-      yPosition += 5
+      doc.setFontSize(20);
+      doc.text(props.tableTitle || 'Data', 15, yPosition);
 
-      const headers = effectiveColumns.value.map(col => col.label)
+      yPosition += 5;
+
+      const headers = effectiveColumns.value.map(col => col.label);
 
       const data = props.tableData.map(row => {
         return effectiveColumns.value.map(col => {
-          let value = row[col.name]
+          let value = row[col.name];
 
           if (props.formatters && props.formatters[col.name]) {
-            value = props.formatters[col.name].formatter(value, row)
+            value = props.formatters[col.name].formatter(value, row);
           } else if (col.format) {
-            value = col.format(value, row)
+            value = col.format(value, row);
           }
 
-          return value !== undefined && value !== null ? String(value) : ''
-        })
-      })
+          return value !== undefined && value !== null ? String(value) : '';
+        });
+      });
 
-      const columnWidths = {}
+      const columnWidths = {};
       effectiveColumns.value.forEach((col, index) => {
-        const colName = col.name.toLowerCase()
+        const colName = col.name.toLowerCase();
 
         if (colName.includes('id') && colName.length < 5) {
-          columnWidths[index] = { cellWidth: 15 }
+          columnWidths[index] = { cellWidth: 15 };
         } else if (colName.includes('description') || colName.includes('text') || colName.includes('message') || colName.includes('comment')) {
           // Text fields get more space
-          columnWidths[index] = { cellWidth: 55 }
+          columnWidths[index] = { cellWidth: 55 };
         } else if (colName.includes('date') || colName.includes('time') || colName.includes('created') || colName.includes('updated')) {
           // Date fields get medium space
-          columnWidths[index] = { cellWidth: 25 }
+          columnWidths[index] = { cellWidth: 25 };
         } else if (colName.includes('email')) {
           // Email fields get medium space
-          columnWidths[index] = { cellWidth: 40 }
+          columnWidths[index] = { cellWidth: 40 };
         } else if (colName.includes('status') || colName.includes('priority') || colName.includes('type')) {
           // Status fields are usually short
-          columnWidths[index] = { cellWidth: 20 }
+          columnWidths[index] = { cellWidth: 20 };
         }
-      })
+      });
 
       // Generate the table with autoTable
       autoTable(doc, {
@@ -429,156 +480,144 @@ const exportAsPDF = () => {
           overflow: 'linebreak',
           cellWidth: 'auto',
           cellPadding: 3,
-          halign: 'left',
-          valign: 'middle'
+          valign: 'middle',
+          font: 'Amiri',
         },
         columnStyles: columnWidths,
         headStyles: {
           fillColor: [240, 240, 240],
           textColor: [0, 0, 0],
-          fontStyle: 'bold'
+          fontStyle: 'bold',
+          font: 'Amiri',
+        },
+        willDrawCell: function(data) {
+          // Ensure all cells use Amiri font
+          data.cell.styles.font = 'Amiri';
         },
         margin: { left: 15, right: 15 },
         didDrawPage: (data) => {
           // Add header to each page
-          doc.setFontSize(8)
-          doc.text(props.title || 'Report', 15, 10)
+          doc.setFontSize(12);
+          doc.text(props.title || 'Report', 15, 10);
 
           // Add page number at the bottom
-          doc.setFontSize(8)
+          doc.setFontSize(8);
           doc.text(
             `Page ${doc.internal.getNumberOfPages()}`,
             doc.internal.pageSize.width / 2,
             doc.internal.pageSize.height - 10,
             { align: 'center' }
-          )
+          );
         }
-      })
+      });
 
       // Add notes if available
-      if (props.notes) {
-        const finalY = doc.lastAutoTable.finalY + 10
-        doc.setFontSize(10)
-        doc.text('Notes:', 15, finalY)
-        doc.setFontSize(9)
+      if (props.notes_data) {
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(17);
 
-        const splitNotes = doc.splitTextToSize(
-          props.notes,
-          doc.internal.pageSize.width - 30
-        )
-        doc.text(splitNotes, 15, finalY + 5)
+        // Use the provided notesTitle
+        doc.text(props.notesTitle || 'Notes:', 15, finalY);
+
+        doc.setFontSize(10);
+
+              if (hasArabic(props.notes_data)) {
+          const splitNotes = doc.splitTextToSize(
+            props.notes_data,
+            doc.internal.pageSize.width - 30
+          );
+
+          // For Arabic notes, align to the right side of the page
+          doc.text(splitNotes, doc.internal.pageSize.width - 15, finalY + 5, {
+            align: 'right'
+          });
+        } else {
+          const splitNotes = doc.splitTextToSize(
+            props.notes_data,
+            doc.internal.pageSize.width - 30
+          );
+          doc.text(splitNotes, 15, finalY + 5);
+        }
       }
     }
 
-    doc.save(props.pdfFilename || `${props.title || 'report'}-${Date.now()}.pdf`)
+    doc.save(props.pdfFilename || `${props.title || 'report'}-${Date.now()}.pdf`);
 
-    exporting.value = false
+    exporting.value = false;
     $q.notify({
       color: 'positive',
       message: 'PDF exported successfully',
       icon: 'check_circle'
-    })
+    });
   } catch (error) {
-    console.error('PDF export error:', error)
-    exporting.value = false
+    console.error('PDF export error:', error);
+    exporting.value = false;
     $q.notify({
       color: 'negative',
       message: 'Failed to export PDF: ' + error.message,
       icon: 'error'
-    })
+    });
   }
 }
 </script>
 
-<style>
+<style scoped>
 .print-dialog {
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .print-content {
-  width: 100%;
-}
-
-.print-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  padding-bottom: 12px;
+  background: white;
 }
 
 .print-table-container {
-  width: 100%;
   overflow-x: auto;
-  margin-bottom: 10px;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
+  margin-bottom: 1rem;
 }
 
 .print-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  border-spacing: 0;
 }
 
-.print-table th, .print-table td {
+.print-table th,
+.print-table td {
+  padding: 8px;
   border: 1px solid #ddd;
-  padding: 6px;
   text-align: left;
-  vertical-align: top;
 }
 
 .print-table th {
-  background-color: #f5f5f5;
+  background-color: #f2f2f2;
   font-weight: bold;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.print-table tr:nth-child(even) {
-  background-color: #f9f9f9;
 }
 
 .wrap-text {
   white-space: normal;
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Print styles - not visible in preview but will apply when printing */
 @media print {
-  body {
-    padding: 20px;
-    font-size: 12pt;
+  body * {
+    visibility: hidden;
   }
-
-  .print-actions {
-    display: none !important;
+  .print-content,
+  .print-content * {
+    visibility: visible;
   }
-
-  .print-table th, .print-table td {
-    padding: 8px !important;
-  }
-
-  .print-header {
-    padding-bottom: 15px;
-  }
-
   .print-content {
-    max-width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
-
-  .print-table {
-    page-break-inside: auto;
-  }
-
-  .print-table thead {
-    display: table-header-group;
-  }
-
-  .print-table tfoot {
-    display: table-footer-group;
-  }
-
-  .print-table tr {
-    page-break-inside: avoid;
+  .print-actions {
+    display: none;
   }
 }
 </style>

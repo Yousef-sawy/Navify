@@ -223,7 +223,8 @@
                   button-icon="print"
                   button-outline
                   button-color="white"
-                  :notes="t('feedback.report.notes')"
+                  :notesTitle="t('feedback.report.noteTitle')"
+                  :notes_data="t('feedback.report.notesData')"
                   pdf-filename="support-tickets-report.pdf"
                 />
               </div>

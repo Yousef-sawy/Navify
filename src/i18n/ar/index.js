@@ -1,6 +1,6 @@
 import homepage from './homepage'
 import navigationPage from './navigationpage'
-import report from './report'
+import test from './test'
 import feedback from './feedback'
 
 export default {
@@ -9,6 +9,6 @@ export default {
   hello: 'مرحبا',
   ...homepage,
   ...navigationPage,
-  ...report,
+  ...test,
   ...feedback
 }

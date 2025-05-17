@@ -116,8 +116,10 @@ export default {
       title: "Support Tickets Report",
       subtitle: "Summary of all submitted feedback and support tickets",
       tableTitle: "Tickets List",
-      notes: "This report includes all tickets submitted through the Feedback & Support system.",
+      noteTitle: "Notes:",
+      notesData: "This fdsfsfsfreport includes all tickets submitted through the Feedback & Support system.",
       print: "Print Report",
+      SummaryTitle:"Summary",
       summary: {
         totalTickets: "Total Tickets",
         openTickets: "Open Tickets",
