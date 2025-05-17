@@ -224,6 +224,7 @@
                   button-outline
                   button-color="white"
                   :notesTitle="t('feedback.report.noteTitle')"
+                  :summaryTitle="t('feedback.report.summaryTitle')"
                   :notes_data="t('feedback.report.notesData')"
                   pdf-filename="support-tickets-report.pdf"
                 />

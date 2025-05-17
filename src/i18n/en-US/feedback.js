@@ -119,7 +119,7 @@ export default {
       noteTitle: "Notes:",
       notesData: "This fdsfsfsfreport includes all tickets submitted through the Feedback & Support system.",
       print: "Print Report",
-      SummaryTitle:"Summary",
+      summaryTitle:"Summary",
       summary: {
         totalTickets: "Total Tickets",
         openTickets: "Open Tickets",

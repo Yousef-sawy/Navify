@@ -16,6 +16,7 @@ export default {
     },
     report: {
       title: 'تقرير التذاكر',
+      summaryTitle:'ملخص',
       subtitle: 'ملخص حالة التذاكر ومعلوماتها',
       tableTitle: 'قائمة التذاكر',
       print: 'طباعة التقرير',

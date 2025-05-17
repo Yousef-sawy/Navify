@@ -20,7 +20,7 @@
                 :table-data="arabicTickets"
                 :columns="printColumns"
                 :summary-data="ticketSummary"
-                :formatters="ticketFormatters"
+                :summaryTitle="t('test.report.summaryTitle')"
                 :button-label="t('test.report.print')"
                 button-icon="print"
                 button-outline
@@ -162,54 +162,54 @@ const ticketSummary = {
 };
 
 // Formatters for the print report
-const ticketFormatters = {
-  status: {
-    formatter: (value) => value,
-    component: 'div',
-    props: (value) => {
-      let color = 'grey';
-      if (value === 'مفتوح') color = 'blue';
-      if (value === 'قيد التنفيذ') color = 'orange';
-      if (value === 'مغلق') color = 'green';
-      if (value === 'جديد') color = 'purple';
+// const ticketFormatters = {
+//   status: {
+//     formatter: (value) => value,
+//     component: 'div',
+//     props: (value) => {
+//       let color = 'grey';
+//       if (value === 'مفتوح') color = 'blue';
+//       if (value === 'قيد التنفيذ') color = 'orange';
+//       if (value === 'مغلق') color = 'green';
+//       if (value === 'جديد') color = 'purple';
 
-      return {
-        class: `text-${color} text-right`
-      };
-    }
-  },
-  priority: {
-    formatter: (value) => value,
-    component: 'div',
-    props: (value) => {
-      let color = 'grey';
-      if (value === 'عالية') color = 'negative';
-      if (value === 'متوسطة') color = 'warning';
-      if (value === 'منخفضة') color = 'positive';
-      if (value === 'قصوى') color = 'deep-orange';
+//       return {
+//         class: `text-${color} text-right`
+//       };
+//     }
+//   },
+//   priority: {
+//     formatter: (value) => value,
+//     component: 'div',
+//     props: (value) => {
+//       let color = 'grey';
+//       if (value === 'عالية') color = 'negative';
+//       if (value === 'متوسطة') color = 'warning';
+//       if (value === 'منخفضة') color = 'positive';
+//       if (value === 'قصوى') color = 'deep-orange';
 
-      return {
-        class: `text-${color} text-right`
-      };
-    }
-  },
-  created: {
-    formatter: (value) => {
-      if (!value) return '';
-      const date = new Date(value);
-      return new Intl.DateTimeFormat('ar-EG', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }).format(date);
-    }
-  },
-  description: {
-    formatter: (value) => value,
-    wrapText: true,
-    maxLines: 2
-  }
-};
+//       return {
+//         class: `text-${color} text-right`
+//       };
+//     }
+//   },
+//   created: {
+//     formatter: (value) => {
+//       if (!value) return '';
+//       const date = new Date(value);
+//       return new Intl.DateTimeFormat('ar-EG', {
+//         year: 'numeric',
+//         month: 'long',
+//         day: 'numeric'
+//       }).format(date);
+//     }
+//   },
+//   description: {
+//     formatter: (value) => value,
+//     wrapText: true,
+//     maxLines: 2
+//   }
+// };
 </script>
 
 <style scoped>

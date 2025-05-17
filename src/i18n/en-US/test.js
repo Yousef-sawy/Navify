@@ -16,6 +16,7 @@ export default {
     },
     report: {
       title: 'Tickets Report',
+      summaryTitle:'Summary',
       subtitle: 'Summary of ticket status and information',
       tableTitle: 'Ticket List',
       print: 'Print Report',

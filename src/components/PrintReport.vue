@@ -38,7 +38,7 @@
 
             <!-- Summary section -->
             <div v-if="summaryData && Object.keys(summaryData).length" class="summary-section q-mb-md">
-              <div class="text-subtitle1 q-mb-xs">Summary</div>
+              <div class="text-subtitle1 q-mb-xs">{{ summaryTitle || 'Summary' }}</div>
               <q-card flat bordered>
                 <q-card-section class="q-pa-sm">
                   <div class="row q-col-gutter-sm">
@@ -147,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 
 import { jsPDF } from 'jspdf';
@@ -166,6 +166,7 @@ const props = defineProps({
   tableData: Array,
   columns: Array,
   summaryData: Object,
+  summaryTitle: String,
   notesTitle: String,
   notes_data: String,
 
@@ -207,6 +208,15 @@ const props = defineProps({
 // State
 const printDialog = ref(false)
 const exporting = ref(false)
+
+// Load Amiri font on mount to ensure it's available for the preview
+onMounted(() => {
+  // Load the Amiri font to ensure it's available for Arabic text
+  const fontLink = document.createElement('link');
+  fontLink.rel = 'stylesheet';
+  fontLink.href = amiriRegular;
+  document.head.appendChild(fontLink);
+});
 
 // Helper method to get a unique key for each row
 const getRowKey = (row, fallbackIndex) => {
@@ -357,7 +367,7 @@ const exportAsPDF = async () => {
     doc.addFileToVFS('Amiri-Regular.ttf', arabicFontData);
     doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
 
-    // Set Amiri as the default font
+    // Set Amiri as the default font for the entire document
     doc.setFont('Amiri');
     doc.setFontSize(21);
 
@@ -381,14 +391,15 @@ const exportAsPDF = async () => {
 
     if (props.summaryData && Object.keys(props.summaryData).length) {
       doc.setFontSize(12);
-      doc.text('Summary', 15, yPosition);
+      // Use the provided summaryTitle instead of hardcoded 'Summary'
+      doc.text(props.summaryTitle || 'Summary', 15, yPosition);
 
       yPosition += 5;
 
       const summaryRows = [];
       const keys = Object.keys(props.summaryData);
 
-      for (let i = 0; i < keys.length; i += 2) {
+            for (let i = 0; i < keys.length; i += 2) {
         const row = [];
         row.push(formatLabel(keys[i]));
         row.push(props.summaryData[keys[i]]);
@@ -491,13 +502,19 @@ const exportAsPDF = async () => {
           font: 'Amiri',
         },
         willDrawCell: function(data) {
-          // Ensure all cells use Amiri font
+          // Ensure all cells use Amiri font for Arabic support
           data.cell.styles.font = 'Amiri';
+
+          // Apply right alignment for RTL if needed
+          if (props.rtl) {
+            data.cell.styles.halign = 'right';
+          }
         },
         margin: { left: 15, right: 15 },
         didDrawPage: (data) => {
           // Add header to each page
           doc.setFontSize(12);
+          doc.setFont('Amiri');
           doc.text(props.title || 'Report', 15, 10);
 
           // Add page number at the bottom
@@ -521,7 +538,7 @@ const exportAsPDF = async () => {
 
         doc.setFontSize(10);
 
-              if (hasArabic(props.notes_data)) {
+        if (hasArabic(props.notes_data)) {
           const splitNotes = doc.splitTextToSize(
             props.notes_data,
             doc.internal.pageSize.width - 30
@@ -599,6 +616,25 @@ const exportAsPDF = async () => {
   white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* RTL support for tables */
+:deep(.q-table--grid) {
+  direction: rtl;
+}
+
+/* Add Amiri font for better Arabic rendering in the preview */
+@font-face {
+  font-family: 'Amiri';
+  src: url('../fonts/Amiri-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Apply Amiri font to Arabic text */
+.print-table th,
+.print-table td {
+  font-family: 'Amiri', Arial, sans-serif;
 }
 
 /* Print styles - not visible in preview but will apply when printing */

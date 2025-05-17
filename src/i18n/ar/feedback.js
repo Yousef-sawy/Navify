@@ -119,7 +119,7 @@ export default {
       noteTitle: "التعليقات:",
       notesData: "يتضمن هذا التقرير جميع التذاكر المرسلة من خلال نظام التعليقات والدعم.",
       print: "طباعة التقرير",
-      SummaryTitle:"ملخص",
+      summaryTitle:"ملخص",
       summary: {
         totalTickets: "إجمالي التذاكر",
         openTickets: "التذاكر المفتوحة",
