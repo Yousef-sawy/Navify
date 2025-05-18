@@ -148,7 +148,6 @@
 
 
 
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
@@ -325,6 +324,111 @@ const formatDate = (date, includeTime = false) => {
   }
 }
 
+// Arabic Data Formatting Functions
+// Format dates in Arabic style but using Gregorian calendar
+const formatDateArabic = (date) => {
+  if (!date) return '-'
+  const d = new Date(date)
+
+  // Arabic locale with Gregorian calendar
+  return d.toLocaleDateString('ar', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    calendar: 'gregory'
+  })
+}
+
+// Format date and time in Arabic style but using Gregorian calendar
+const formatDateTimeArabic = (date) => {
+  if (!date) return '-'
+  const d = new Date(date)
+
+  // Arabic locale with Gregorian calendar for date and time
+  return d.toLocaleString('ar', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
+    calendar: 'gregory'
+  })
+}
+
+// Format numbers in Arabic numerals
+const formatNumberArabic = (num) => {
+  if (num === null || num === undefined) return ''
+
+  // Convert to Arabic numerals and format with thousands separator
+  return Number(num).toLocaleString('ar')
+}
+
+// Format currency in Arabic style
+const formatCurrencyArabic = (amount, currency = 'SAR') => {
+  if (amount === null || amount === undefined) return ''
+
+  // Format currency in Arabic style
+  return Number(amount).toLocaleString('ar', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+// Format percentage in Arabic style
+const formatPercentageArabic = (value) => {
+  if (value === null || value === undefined) return ''
+
+  // Convert decimal to percentage and format in Arabic
+  const percentage = Number(value) * 100
+  return percentage.toLocaleString('ar') + '%'
+}
+
+// Main function to format data in Arabic based on type
+const formatDataArabic = (value, type) => {
+  if (value === null || value === undefined) return ''
+
+  switch (type) {
+    case 'date':
+      return formatDateArabic(value)
+    case 'datetime':
+      return formatDateTimeArabic(value)
+    case 'number':
+      return formatNumberArabic(value)
+    case 'currency':
+      return formatCurrencyArabic(value)
+    case 'percentage':
+      return formatPercentageArabic(value)
+    case 'boolean':
+      return value ? 'نعم' : 'لا'
+    default:
+      return value
+  }
+}
+
+// Detect data type from column name
+const detectDataType = (columnName) => {
+  const name = columnName.toLowerCase()
+
+  if (name.includes('date') && (name.includes('time') || name.includes('at'))) {
+    return 'datetime'
+  } else if (name.includes('date')) {
+    return 'date'
+  } else if (name.includes('price') || name.includes('cost') ||
+            name.includes('amount') || name.includes('revenue') ||
+            name.includes('salary') || name.includes('budget')) {
+    return 'currency'
+  } else if (name.includes('percent') || name.includes('rate') || name.includes('growth')) {
+    return 'percentage'
+  } else if (name === 'active' || name === 'status' || name.includes('is_')) {
+    return 'boolean'
+  } else {
+    return 'text'
+  }
+}
+
 //Checks if a string contains any Arabic/RTL characters.
 const hasArabic = (text) => {
   if (!text || typeof text !== 'string') return false;
@@ -347,7 +451,6 @@ const getBase64Font = async (fontPath) => {
     return null;
   }
 }
-
 
 const exportAsPDF = async () => {
   exporting.value = true
@@ -383,6 +486,8 @@ const exportAsPDF = async () => {
 
     // Determine if document is RTL
     const isRTL = props.rtl === true;
+    // Determine if we should use Arabic formatting
+    const useArabicFormat = isRTL || hasArabic(props.title || '');
 
     // Helper function to render text with appropriate alignment based on language
     const renderText = (text, x, y, options = {}) => {
@@ -412,17 +517,38 @@ const exportAsPDF = async () => {
     };
 
     const addPageHeaderAndFooter = () => {
-      doc.setFontSize(12);
-      renderText(props.title || 'Report', null, 10);
+  // Header with title
+  doc.setFontSize(12);
+  renderText(props.title || 'Report', null, 10);
 
-      doc.setFontSize(10);
-      doc.text(
-        `Page ${doc.internal.getNumberOfPages()}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
-    };
+  // Footer with page numbers and date
+  doc.setFontSize(10);
+
+  // Format page number in Arabic if using Arabic format
+  const pageNumberText = useArabicFormat
+    ? `صفحة ${formatNumberArabic(doc.internal.getNumberOfPages())}`
+    : `Page ${doc.internal.getNumberOfPages()}`;
+
+  // Add page number in the center
+  doc.text(
+    pageNumberText,
+    pageWidth / 2,
+    pageHeight - 10,
+    { align: 'center' }
+  );
+
+  // Add date in the right corner of footer
+  const footerDate = useArabicFormat
+    ? formatDateArabic(new Date())
+    : formatDate(new Date());
+
+  doc.text(
+    footerDate,
+    pageWidth - margin.right,
+    pageHeight - 10,
+    { align: 'right' }
+  );
+};
 
     // Set title on first page
     doc.setFontSize(20);
@@ -438,7 +564,9 @@ const exportAsPDF = async () => {
     }
 
     doc.setFontSize(11);
-    const dateText = `Generated on: ${formatDate(new Date(), true)}`;
+    const dateText = useArabicFormat
+      ? `تم إنشاؤه في: ${formatDateTimeArabic(new Date())}`
+      : `Generated on: ${formatDate(new Date(), true)}`;
     doc.text(dateText, pageWidth - margin.right, margin.top + 25, {
       align: 'right'
     });
@@ -449,7 +577,7 @@ const exportAsPDF = async () => {
     if (props.summaryData && Object.keys(props.summaryData).length > 0) {
       // Title for summary with proper alignment
       doc.setFontSize(14);
-      renderText(props.summaryTitle || 'Summary', null, yPosition);
+      renderText(props.summaryTitle || (useArabicFormat ? 'ملخص' : 'Summary'), null, yPosition);
       yPosition += 8;
 
       const summaryRows = [];
@@ -457,12 +585,30 @@ const exportAsPDF = async () => {
 
       for (let i = 0; i < keys.length; i += 2) {
         const row = [];
-        row.push(formatLabel(keys[i]));
-        row.push(props.summaryData[keys[i]]);
+        const key1 = keys[i];
+        let value1 = props.summaryData[key1];
+
+        // Format value based on key name if in Arabic mode
+        if (useArabicFormat) {
+          const dataType = detectDataType(key1);
+          value1 = formatDataArabic(value1, dataType);
+        }
+
+        row.push(formatLabel(key1));
+        row.push(value1);
 
         if (i + 1 < keys.length) {
-          row.push(formatLabel(keys[i + 1]));
-          row.push(props.summaryData[keys[i + 1]]);
+          const key2 = keys[i + 1];
+          let value2 = props.summaryData[key2];
+
+          // Format second value if in Arabic mode
+          if (useArabicFormat) {
+            const dataType = detectDataType(key2);
+            value2 = formatDataArabic(value2, dataType);
+          }
+
+          row.push(formatLabel(key2));
+          row.push(value2);
         } else {
           row.push('');
           row.push('');
@@ -478,8 +624,8 @@ const exportAsPDF = async () => {
         body: summaryRows,
         theme: 'grid',
         styles: {
-          fontSize: 12, // Increased from 10
-          cellPadding: 5, // Increased from 4
+          fontSize: 12,
+          cellPadding: 5,
           font: 'Amiri',
           lineWidth: 0.1,
           lineColor: [80, 80, 80],
@@ -522,7 +668,7 @@ const exportAsPDF = async () => {
 
       // Title for table section with proper alignment
       doc.setFontSize(18);
-      renderText(props.tableTitle || 'Data', null, yPosition);
+      renderText(props.tableTitle || (useArabicFormat ? 'البيانات' : 'Data'), null, yPosition);
       yPosition += 8;
 
       // Pre-process headers to apply fonts properly for Arabic
@@ -541,15 +687,21 @@ const exportAsPDF = async () => {
         };
       });
 
-      // Format table data
+      // Format table data with Arabic formatting when needed
       const data = props.tableData.map(row => {
         return effectiveColumns.value.map(col => {
           let value = row[col.name];
 
-          if (props.formatters && props.formatters[col.name]) {
+                    if (props.formatters && props.formatters[col.name]) {
+            // Use custom formatter if provided
             value = props.formatters[col.name].formatter(value, row);
           } else if (col.format) {
+            // Use column format function if provided
             value = col.format(value, row);
+          } else if (useArabicFormat) {
+            // Apply Arabic formatting based on column name
+            const dataType = detectDataType(col.name);
+            value = formatDataArabic(value, dataType);
           }
 
           return value !== undefined && value !== null ? String(value) : '';
@@ -659,7 +811,7 @@ const exportAsPDF = async () => {
 
       // Add notes title with proper alignment
       doc.setFontSize(14);
-      renderText(props.notesTitle || 'Notes:', null, yPosition);
+      renderText(props.notesTitle || (useArabicFormat ? 'ملاحظات:' : 'Notes:'), null, yPosition);
       yPosition += 8;
 
       // Add notes content with proper alignment - Use renderText helper for consistency
@@ -672,7 +824,7 @@ const exportAsPDF = async () => {
     exporting.value = false;
     $q.notify({
       color: 'positive',
-      message: 'PDF exported successfully',
+      message: useArabicFormat ? 'تم تصدير ملف PDF بنجاح' : 'PDF exported successfully',
       icon: 'check_circle'
     });
   } catch (error) {
@@ -680,15 +832,14 @@ const exportAsPDF = async () => {
     exporting.value = false;
     $q.notify({
       color: 'negative',
-      message: 'Failed to export PDF: ' + error.message,
+      message: useArabicFormat
+        ? 'فشل تصدير ملف PDF: ' + error.message
+        : 'Failed to export PDF: ' + error.message,
       icon: 'error'
     });
   }
 }
-
-
 </script>
-
 
 <style scoped>
 .print-dialog {
