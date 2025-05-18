@@ -146,6 +146,9 @@
   </div>
 </template>
 
+
+
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
@@ -205,7 +208,6 @@ const props = defineProps({
   }
 })
 
-// State
 const printDialog = ref(false)
 const exporting = ref(false)
 
@@ -218,9 +220,7 @@ onMounted(() => {
   document.head.appendChild(fontLink);
 });
 
-// Helper method to get a unique key for each row
 const getRowKey = (row, fallbackIndex) => {
-  // Try to use the specified rowKey field
   if (props.rowKey && row[props.rowKey] !== undefined) {
     return row[props.rowKey]
   }
@@ -234,7 +234,6 @@ const getRowKey = (row, fallbackIndex) => {
   return fallbackIndex
 }
 
-// Dynamically generate columns based on the actual data
 const effectiveColumns = computed(() => {
   // If columns are explicitly provided, use them
   if (props.columns && props.columns.length > 0) {
@@ -367,6 +366,7 @@ const exportAsPDF = async () => {
 
     doc.addFileToVFS('Amiri-Regular.ttf', arabicFontData);
     doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'bold');  // Add bold version too
 
     // Set Amiri as the default font for the entire document
     doc.setFont('Amiri');
@@ -408,17 +408,22 @@ const exportAsPDF = async () => {
         ...options
       };
 
+      // If text is a string and no x position is provided, split it to ensure wrapping
+      if (typeof text === 'string' && !x) {
+        text = doc.splitTextToSize(text, contentWidth);
+      }
+
       doc.text(text, xPos, y, textOptions);
     };
 
     // Add page header and footer function
     const addPageHeaderAndFooter = () => {
       // Header
-      doc.setFontSize(10);
+      doc.setFontSize(12); // Increased from 10
       renderText(props.title || 'Report', null, 10);
 
       // Footer with page number
-      doc.setFontSize(8);
+      doc.setFontSize(10); // Increased from 8
       doc.text(
         `Page ${doc.internal.getNumberOfPages()}`,
         pageWidth / 2,
@@ -428,19 +433,19 @@ const exportAsPDF = async () => {
     };
 
     // Set title on first page
-    doc.setFontSize(18);
+    doc.setFontSize(20); // Increased from 18
     doc.text(props.title || 'Report', pageWidth / 2, margin.top + 5, {
       align: 'center'
     });
 
     if (props.subtitle) {
-      doc.setFontSize(14);
+      doc.setFontSize(16); // Increased from 14
       doc.text(props.subtitle, pageWidth / 2, margin.top + 15, {
         align: 'center'
       });
     }
 
-    doc.setFontSize(9);
+    doc.setFontSize(11); // Increased from 9
     const dateText = `Generated on: ${formatDate(new Date(), true)}`;
     doc.text(dateText, pageWidth - margin.right, margin.top + 25, {
       align: 'right'
@@ -451,9 +456,9 @@ const exportAsPDF = async () => {
     // --- Summary Section ---
     if (props.summaryData && Object.keys(props.summaryData).length > 0) {
       // Title for summary with proper alignment
-      doc.setFontSize(12);
+      doc.setFontSize(14); // Increased from 12
       renderText(props.summaryTitle || 'Summary', null, yPosition);
-      yPosition += 7;
+      yPosition += 8; // Increased spacing from 7
 
       const summaryRows = [];
       const keys = Object.keys(props.summaryData);
@@ -482,8 +487,8 @@ const exportAsPDF = async () => {
         body: summaryRows,
         theme: 'grid',
         styles: {
-          fontSize: 10,
-          cellPadding: 4,
+          fontSize: 12, // Increased from 10
+          cellPadding: 5, // Increased from 4
           font: 'Amiri',
           lineWidth: 0.1,
           lineColor: [80, 80, 80],
@@ -503,17 +508,21 @@ const exportAsPDF = async () => {
           3: { cellWidth: contentWidth * 0.3 }
         },
         margin: margin,
-        didDrawPage: addPageHeaderAndFooter
+        didDrawPage: addPageHeaderAndFooter,
+        didParseCell: function(data) {
+          // Ensure all cells use Amiri font
+          data.cell.styles.font = 'Amiri';
+        }
       });
 
-      yPosition = doc.lastAutoTable.finalY + 15;
+      yPosition = doc.lastAutoTable.finalY + 18; // Increased spacing from 15
     }
 
     // --- Main Data Table Section ---
     if (props.tableData && props.tableData.length > 0) {
       // If there's not enough space for table header + at least 3 rows, start a new page
-      const estimatedRowHeight = 10; // mm per row
-      const minTableSpace = 40 + (Math.min(3, props.tableData.length) * estimatedRowHeight);
+      const estimatedRowHeight = 12; // Increased from 10 mm per row
+      const minTableSpace = 45 + (Math.min(3, props.tableData.length) * estimatedRowHeight); // Increased from 40
 
       if (yPosition + minTableSpace > pageHeight - margin.bottom) {
         doc.addPage();
@@ -522,11 +531,26 @@ const exportAsPDF = async () => {
       }
 
       // Title for table section with proper alignment
-      doc.setFontSize(12);
+      doc.setFontSize(18); // Increased from 17
       renderText(props.tableTitle || 'Data', null, yPosition);
-      yPosition += 7;
+      yPosition += 8; // Increased from 7
 
-      const headers = effectiveColumns.value.map(col => col.label);
+      // Pre-process headers to apply fonts properly for Arabic
+      const headerObjects = effectiveColumns.value.map(col => {
+        // Check if header contains Arabic
+        const isArabicHeader = hasArabic(col.label);
+
+        // Create a custom header object
+        return {
+          content: col.label,
+          styles: {
+            font: 'Amiri',
+            fontStyle: 'bold',
+            fontSize: 12, // Explicit font size for headers
+            halign: (isArabicHeader || isRTL) ? 'right' : 'left'
+          }
+        };
+      });
 
       // Format table data
       const data = props.tableData.map(row => {
@@ -571,16 +595,17 @@ const exportAsPDF = async () => {
         }
       });
 
-      // Generate the table with autoTable
+      // Generate the table with autoTable using custom headers
       autoTable(doc, {
         startY: yPosition,
-        head: [headers],
+        // Use customized header objects instead of simple array
+        head: [headerObjects],
         body: data,
         theme: 'grid',
         styles: {
-          fontSize: 9,
+          fontSize: 11, // Increased from 9
           overflow: 'linebreak',
-          cellPadding: 3,
+          cellPadding: 4, // Increased from 3
           valign: 'middle',
           font: 'Amiri',
           lineWidth: 0.1,
@@ -593,10 +618,28 @@ const exportAsPDF = async () => {
           textColor: [0, 0, 0],
           fontStyle: 'bold',
           font: 'Amiri',
+          fontSize: 12, // Explicit font size for headers
           halign: isRTL ? 'right' : 'left'
         },
+        didParseCell: function(data) {
+          // IMPORTANT: Force Amiri font and apply special handling for Arabic in all cells
+          data.cell.styles.font = 'Amiri';
+
+          if (data.section === 'head') {
+            // Special handling for header cells
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fontSize = 12; // Ensure header font size
+
+            // Check if cell content contains Arabic
+            if (typeof data.cell.raw === 'string' && hasArabic(data.cell.raw)) {
+              data.cell.styles.halign = 'right';
+            } else if (isRTL) {
+              data.cell.styles.halign = 'right';
+            }
+          }
+        },
         willDrawCell: function(data) {
-          // Ensure all cells use Amiri font for Arabic support
+          // Additional font enforcement at draw time
           data.cell.styles.font = 'Amiri';
 
           // Set content alignment based on text direction
@@ -614,22 +657,17 @@ const exportAsPDF = async () => {
         rowPageBreak: 'avoid'
       });
 
-      yPosition = doc.lastAutoTable.finalY + 15;
+      yPosition = doc.lastAutoTable.finalY + 18; // Increased from 15
     }
 
     // --- Notes Section ---
     if (props.notes_data && props.notes_data.trim().length > 0) {
       // Format notes text
       const notesText = props.notes_data;
-      doc.setFontSize(10);
 
       // Calculate text lines and estimate space needed
-      const textLines = doc.splitTextToSize(
-        notesText,
-        contentWidth
-      );
-
-      const estimatedNotesHeight = 15 + (textLines.length * 4); // Title + text
+      const textLines = doc.splitTextToSize(notesText, contentWidth);
+      const estimatedNotesHeight = 20 + (textLines.length * 5); // Increased from 15+(4*lines)
 
       // Start a new page if not enough space
       if (yPosition + estimatedNotesHeight > pageHeight - margin.bottom) {
@@ -639,12 +677,12 @@ const exportAsPDF = async () => {
       }
 
       // Add notes title with proper alignment
-      doc.setFontSize(12);
+      doc.setFontSize(14); // Increased from 12
       renderText(props.notesTitle || 'Notes:', null, yPosition);
-      yPosition += 7;
+      yPosition += 8; // Increased from 7
 
-      // Add notes content with proper alignment
-      doc.setFontSize(9);
+      // Add notes content with proper alignment - Use renderText helper for consistency
+      doc.setFontSize(11); // Increased from 9
       renderText(notesText, null, yPosition);
     }
 
@@ -667,6 +705,10 @@ const exportAsPDF = async () => {
     });
   }
 }
+
+//
+//
+//
 
 
 

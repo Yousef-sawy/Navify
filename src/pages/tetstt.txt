@@ -1481,3 +1481,435 @@ const exportAsPDF = async () => {
   }
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const exportAsPDF = async () => {
+  exporting.value = true
+
+  try {
+    // Load the font data
+    const arabicFontData = await getBase64Font(amiriRegular);
+
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    doc.addFileToVFS('Amiri-Regular.ttf', arabicFontData);
+    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'bold');  // Add bold version too
+
+    // Set Amiri as the default font for the entire document
+    doc.setFont('Amiri');
+
+    // Global page margins
+    const margin = {
+      left: 15,
+      right: 15,
+      top: 15,
+      bottom: 15
+    };
+
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const contentWidth = pageWidth - margin.left - margin.right;
+
+    // Determine if document is RTL
+    const isRTL = props.rtl === true;
+
+    // Helper function to render text with appropriate alignment based on language
+    const renderText = (text, x, y, options = {}) => {
+      // Check if the text contains Arabic characters
+      const textIsRTL = isRTL || hasArabic(text);
+
+      // Set default alignment based on text direction
+      const defaultAlign = textIsRTL ? 'right' : 'left';
+
+      // Calculate x position based on alignment
+      let xPos = x;
+      if (textIsRTL) {
+        xPos = pageWidth - margin.right;
+      } else {
+        xPos = margin.left;
+      }
+
+      // Merge default options with provided options
+      const textOptions = {
+        align: defaultAlign,
+        ...options
+      };
+
+      // If text is a string and no x position is provided, split it to ensure wrapping
+      if (typeof text === 'string' && !x) {
+        text = doc.splitTextToSize(text, contentWidth);
+      }
+
+      doc.text(text, xPos, y, textOptions);
+    };
+
+    // Add page header and footer function
+    const addPageHeaderAndFooter = () => {
+      // Header
+      doc.setFontSize(10);
+      renderText(props.title || 'Report', null, 10);
+
+      // Footer with page number
+      doc.setFontSize(8);
+      doc.text(
+        `Page ${doc.internal.getNumberOfPages()}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+    };
+
+    // Set title on first page
+    doc.setFontSize(18);
+    doc.text(props.title || 'Report', pageWidth / 2, margin.top + 5, {
+      align: 'center'
+    });
+
+    if (props.subtitle) {
+      doc.setFontSize(14);
+      doc.text(props.subtitle, pageWidth / 2, margin.top + 15, {
+        align: 'center'
+      });
+    }
+
+    doc.setFontSize(9);
+    const dateText = `Generated on: ${formatDate(new Date(), true)}`;
+    doc.text(dateText, pageWidth - margin.right, margin.top + 25, {
+      align: 'right'
+    });
+
+    let yPosition = margin.top + 35;
+
+    // --- Summary Section ---
+    if (props.summaryData && Object.keys(props.summaryData).length > 0) {
+      // Title for summary with proper alignment
+      doc.setFontSize(12);
+      renderText(props.summaryTitle || 'Summary', null, yPosition);
+      yPosition += 7;
+
+      const summaryRows = [];
+      const keys = Object.keys(props.summaryData);
+
+      // Create rows with 2 columns of field-value pairs
+      for (let i = 0; i < keys.length; i += 2) {
+        const row = [];
+        row.push(formatLabel(keys[i]));
+        row.push(props.summaryData[keys[i]]);
+
+        if (i + 1 < keys.length) {
+          row.push(formatLabel(keys[i + 1]));
+          row.push(props.summaryData[keys[i + 1]]);
+        } else {
+          row.push('');
+          row.push('');
+        }
+
+        summaryRows.push(row);
+      }
+
+      // Draw summary table
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Field', 'Value', 'Field', 'Value']],
+        body: summaryRows,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+          font: 'Amiri',
+          lineWidth: 0.1,
+          lineColor: [80, 80, 80],
+          halign: isRTL ? 'right' : 'left'
+        },
+        headStyles: {
+          fillColor: [240, 240, 240],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          font: 'Amiri',
+          halign: isRTL ? 'right' : 'left'
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: contentWidth * 0.2 },
+          1: { cellWidth: contentWidth * 0.3 },
+          2: { fontStyle: 'bold', cellWidth: contentWidth * 0.2 },
+          3: { cellWidth: contentWidth * 0.3 }
+        },
+        margin: margin,
+        didDrawPage: addPageHeaderAndFooter
+      });
+
+      yPosition = doc.lastAutoTable.finalY + 15;
+    }
+
+    // --- Main Data Table Section ---
+    if (props.tableData && props.tableData.length > 0) {
+      // If there's not enough space for table header + at least 3 rows, start a new page
+      const estimatedRowHeight = 10; // mm per row
+      const minTableSpace = 40 + (Math.min(3, props.tableData.length) * estimatedRowHeight);
+
+      if (yPosition + minTableSpace > pageHeight - margin.bottom) {
+        doc.addPage();
+        addPageHeaderAndFooter();
+        yPosition = margin.top + 15;
+      }
+
+      // Title for table section with proper alignment
+      doc.setFontSize(17);
+      renderText(props.tableTitle || 'Data', null, yPosition);
+      yPosition += 7;
+
+      // Pre-process headers to apply fonts properly for Arabic
+      const headerObjects = effectiveColumns.value.map(col => {
+        // Check if header contains Arabic
+        const isArabicHeader = hasArabic(col.label);
+
+        // Create a custom header object
+        return {
+          content: col.label,
+          styles: {
+            font: 'Amiri',
+            fontStyle: 'bold',
+            halign: (isArabicHeader || isRTL) ? 'right' : 'left'
+          }
+        };
+      });
+
+      // Format table data
+      const data = props.tableData.map(row => {
+        return effectiveColumns.value.map(col => {
+          let value = row[col.name];
+
+          if (props.formatters && props.formatters[col.name]) {
+            value = props.formatters[col.name].formatter(value, row);
+          } else if (col.format) {
+            value = col.format(value, row);
+          }
+
+          return value !== undefined && value !== null ? String(value) : '';
+        });
+      });
+
+      // Calculate optimal column widths based on content
+      const columnWidths = {};
+      const totalColumns = effectiveColumns.value.length;
+      const defaultColumnWidth = contentWidth / totalColumns;
+
+      effectiveColumns.value.forEach((col, index) => {
+        const colName = col.name.toLowerCase();
+
+        if (colName.includes('notes') || colName.includes('description') || colName.includes('comment')) {
+          // Give more space to text fields
+          columnWidths[index] = { cellWidth: defaultColumnWidth * 1.8 };
+        } else if (colName.includes('id') && colName.length < 5) {
+          // ID columns are usually narrow
+          columnWidths[index] = { cellWidth: defaultColumnWidth * 0.6 };
+        } else if (colName.includes('date') || colName.includes('time')) {
+          // Date fields
+          columnWidths[index] = { cellWidth: defaultColumnWidth * 1.2 };
+        } else if (colName === 'month' || colName.includes('status') || colName.includes('type')) {
+          // Medium-sized fields
+          columnWidths[index] = { cellWidth: defaultColumnWidth * 0.8 };
+        } else if (colName.includes('growth') || colName.includes('percentage')) {
+          // Percentage fields
+          columnWidths[index] = { cellWidth: defaultColumnWidth * 0.7 };
+        } else {
+          columnWidths[index] = { cellWidth: defaultColumnWidth };
+        }
+      });
+
+      // Generate the table with autoTable using custom headers
+      autoTable(doc, {
+        startY: yPosition,
+        // Use customized header objects instead of simple array
+        head: [headerObjects],
+        body: data,
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+          overflow: 'linebreak',
+          cellPadding: 3,
+          valign: 'middle',
+          font: 'Amiri',
+          lineWidth: 0.1,
+          lineColor: [80, 80, 80],
+          halign: isRTL ? 'right' : 'left'
+        },
+        columnStyles: columnWidths,
+        headStyles: {
+          fillColor: [240, 240, 240],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          font: 'Amiri',
+          halign: isRTL ? 'right' : 'left'
+        },
+        didParseCell: function(data) {
+          // IMPORTANT: Force Amiri font and apply special handling for Arabic in all cells
+          data.cell.styles.font = 'Amiri';
+
+          if (data.section === 'head') {
+            // Special handling for header cells
+            data.cell.styles.fontStyle = 'bold';
+
+            // Check if cell content contains Arabic
+            if (typeof data.cell.raw === 'string' && hasArabic(data.cell.raw)) {
+              data.cell.styles.halign = 'right';
+            } else if (isRTL) {
+              data.cell.styles.halign = 'right';
+            }
+          }
+        },
+        willDrawCell: function(data) {
+          // Additional font enforcement at draw time
+          data.cell.styles.font = 'Amiri';
+
+          // Set content alignment based on text direction
+          if (typeof data.cell.raw === 'string' && hasArabic(data.cell.raw)) {
+            data.cell.styles.halign = 'right';
+          } else if (isRTL) {
+            data.cell.styles.halign = 'right';
+          } else {
+            data.cell.styles.halign = 'left';
+          }
+        },
+        margin: margin,
+        didDrawPage: addPageHeaderAndFooter,
+        // Try to keep rows together when possible
+        rowPageBreak: 'avoid'
+      });
+
+      yPosition = doc.lastAutoTable.finalY + 15;
+    }
+
+    // --- Notes Section ---
+    if (props.notes_data && props.notes_data.trim().length > 0) {
+      // Format notes text
+      const notesText = props.notes_data;
+
+      // Calculate text lines and estimate space needed
+      const textLines = doc.splitTextToSize(notesText, contentWidth);
+      const estimatedNotesHeight = 15 + (textLines.length * 4); // Title + text
+
+      // Start a new page if not enough space
+      if (yPosition + estimatedNotesHeight > pageHeight - margin.bottom) {
+        doc.addPage();
+        addPageHeaderAndFooter();
+        yPosition = margin.top + 15;
+      }
+
+      // Add notes title with proper alignment
+      doc.setFontSize(12);
+      renderText(props.notesTitle || 'Notes:', null, yPosition);
+      yPosition += 7;
+
+      // Add notes content with proper alignment - Use renderText helper for consistency
+      doc.setFontSize(9);
+      renderText(notesText, null, yPosition);
+    }
+
+    // Save the PDF
+    doc.save(props.pdfFilename || `${props.title || 'report'}-${Date.now()}.pdf`);
+
+    exporting.value = false;
+    $q.notify({
+      color: 'positive',
+      message: 'PDF exported successfully',
+      icon: 'check_circle'
+    });
+  } catch (error) {
+    console.error('PDF export error:', error);
+    exporting.value = false;
+    $q.notify({
+      color: 'negative',
+      message: 'Failed to export PDF: ' + error.message,
+      icon: 'error'
+    });
+  }
+}

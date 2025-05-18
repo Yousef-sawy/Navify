@@ -7,7 +7,7 @@
         <q-card>
           <q-card-section>
             <div class="text-h6">Complete English Example</div>
-            <div class="text-subtitle2">With formatted data, notes and summary</div>
+            <div class="text-subtitle2">All content in English</div>
           </q-card-section>
           <q-card-section>
             <PDFExport
@@ -32,8 +32,8 @@
       <div class="col-12 col-md-6">
         <q-card>
           <q-card-section>
-            <div class="text-h6">Arabic Content with English Headers</div>
-            <div class="text-subtitle2">English headers with Arabic content</div>
+            <div class="text-h6">Complete Arabic Example</div>
+            <div class="text-subtitle2">All content in Arabic</div>
           </q-card-section>
           <q-card-section>
             <PDFExport
@@ -41,9 +41,10 @@
               subtitle="نظرة عامة على مبيعات الربع الثالث 2023"
               tableTitle="تفصيل المبيعات الشهرية"
               :tableData="arabicSalesData"
-              :columns="englishHeadersArabicContent"
+              :columns="arabicColumns"
+              :summaryData="arabicSummaryData"
               summaryTitle="ملخص الأداء"
-              notesTitle="ملاحظات"
+              notesTitle="ملاحظات التحليل"
               :notes_data="arabicNotes"
               buttonColor="info"
               buttonLabel="تصدير كملف PDF"
@@ -61,7 +62,7 @@
 import { ref } from 'vue';
 import PDFExport from '../components/PrintReport.vue';
 
-// Sample sales data
+// Sample sales data - English
 const salesData = ref([
   { id: 1, month: 'January', revenue: 45000, growth: 5.2, product: 'Product A', units: 1200, cost: 32000, profit: 13000, status: 'Completed', notes: 'Strong start to the year' },
   { id: 2, month: 'February', revenue: 48500, growth: 7.8, product: 'Product B', units: 1350, cost: 34500, profit: 14000, status: 'Completed', notes: 'Valentine\'s Day promotion successful' },
@@ -74,7 +75,7 @@ const salesData = ref([
   { id: 9, month: 'September', revenue: 55000, growth: 3.8, product: 'Product A', units: 1475, cost: 39000, profit: 16000, status: 'Completed', notes: 'Fall collection launch' },
 ]);
 
-// Sample columns
+// English columns
 const salesColumns = ref([
   { name: 'month', label: 'Month', field: 'month', sortable: true },
   { name: 'revenue', label: 'Revenue ($)', field: 'revenue', sortable: true, format: val => `$${val.toLocaleString()}` },
@@ -85,7 +86,7 @@ const salesColumns = ref([
   { name: 'notes', label: 'Notes', field: 'notes' }
 ]);
 
-// Summary data
+// English summary data
 const summaryData = ref({
   totalRevenue: '$458,500',
   averageGrowth: '+2.9%',
@@ -113,10 +114,10 @@ const formatters = ref({
   }
 });
 
-// Notes text
-const notesText = ref(`This report summarizes the sales performance for the first three quarters of 2023. We've seen consistent growth overall, with particularly strong performance in March, June, and September, which coincide with end-of-quarter promotional activities. Product A continues to be our strongest performer. The slight decline in July is attributed to seasonal patterns and is consistent with previous years. We recommend continuing with the quarterly promotional strategy and possibly expanding the Product A line.This report summarizes the sales performance for the first three quarters of 2023. We've seen consistent growth overall, with particularly strong performance in March, June, and September, which coincide with end-of-quarter promotional activities. Product A continues to be our strongest performer. The slight decline in July is attributed to seasonal patterns and is consistent with previous years. We recommend continuing with the quarterly promotional strategy and possibly expanding the Product A line.`);
+// English notes text
+const notesText = ref(`This report summarizes the sales performance for the first three quarters of 2023. We've seen consistent growth overall, with particularly strong performance in March, June, and September, which coincide with end-of-quarter promotional activities. Product A continues to be our strongest performer. The slight decline in July is attributed to seasonal patterns and is consistent with previous years. We recommend continuing with the quarterly promotional strategy and possibly expanding the Product A line.`);
 
-// Arabic data for RTL example
+// Arabic sales data
 const arabicSalesData = ref([
   { id: 1, month: 'يناير', revenue: 45000, growth: 5.2, product: 'المنتج أ', units: 1200, profit: 13000, notes: 'بداية قوية للعام' },
   { id: 2, month: 'فبراير', revenue: 48500, growth: 7.8, product: 'المنتج ب', units: 1350, profit: 14000, notes: 'حملة عيد الحب ناجحة' },
@@ -125,21 +126,29 @@ const arabicSalesData = ref([
   { id: 5, month: 'مايو', revenue: 51500, growth: 5.1, product: 'المنتج ب', units: 1375, profit: 15000, notes: 'ارتفاع عيد الأم' }
 ]);
 
-// English headers for Arabic content
-const englishHeadersArabicContent = ref([
-  { name: 'month', label: 'Month', field: 'month', sortable: true },
-  { name: 'revenue', label: 'Revenue ($)', field: 'revenue', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'growth', label: 'Growth (%)', field: 'growth', sortable: true, format: val => `${val > 0 ? '+' : ''}${val}%` },
-  { name: 'product', label: 'Product', field: 'product', sortable: true },
-  { name: 'units', label: 'Units Sold', field: 'units', sortable: true, format: val => val.toLocaleString() },
-  { name: 'profit', label: 'Profit ($)', field: 'profit', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'notes', label: 'Notes', field: 'notes' }
+// Arabic columns
+const arabicColumns = ref([
+  { name: 'month', label: 'الشهر', field: 'month', sortable: true },
+  { name: 'revenue', label: 'الإيرادات ($)', field: 'revenue', sortable: true, format: val => `$${val.toLocaleString()}` },
+  { name: 'growth', label: 'النمو (%)', field: 'growth', sortable: true, format: val => `${val > 0 ? '+' : ''}${val}%` },
+  { name: 'product', label: 'المنتج', field: 'product', sortable: true },
+  { name: 'units', label: 'الوحدات المباعة', field: 'units', sortable: true, format: val => val.toLocaleString() },
+  { name: 'profit', label: 'الربح ($)', field: 'profit', sortable: true, format: val => `$${val.toLocaleString()}` },
+  { name: 'notes', label: 'ملاحظات', field: 'notes' }
 ]);
 
-
+// Arabic summary data
+const arabicSummaryData = ref({
+  totalRevenue: '$246,000',
+  averageGrowth: '+3.9%',
+  bestMonth: 'مارس ($52,000)',
+  worstMonth: 'يناير ($45,000)',
+  totalProfit: '$72,000',
+  totalUnits: '6,625'
+});
 
 // Arabic notes
-const arabicNotes = ref(`يلخص هذا التقرير أداء المبيعات للربع الأول من عام 2023. لقد شهدنا نموًا ثابتًا بشكل عام، مع أداء قوي بشكل خاص في مارس. يستمر المنتج أ في كونه الأقوى أداءً. الانخفاض الطفيف في أبريل يُعزى إلى الأنماط الموسمية ويتسق مع السنوات السابقة.`);
+const arabicNotes = ref(`يلخص هذا التقرير أداء المبيعات للأرباع الثلاثة الأولى من عام 2023. شهدنا نموًا مستمرًا بشكل عام، مع أداء قوي بشكل خاص في مارس ويونيو وسبتمبر، والتي تتزامن مع أنشطة الترويج في نهاية الربع. لا يزال المنتج أ الأقوى أداءً. يُنسب الانخفاض الطفيف في يوليو إلى الأنماط الموسمية ويتفق مع السنوات السابقة. نوصي بمواصلة استراتيجية الترويج الربعية واحتمال توسيع خط المنتج أ.`);
 </script>
 
 <style scoped>

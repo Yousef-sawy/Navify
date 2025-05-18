@@ -205,10 +205,8 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useNavigation } from '../Functionality/useNavigation'
 import { useI18n } from 'vue-i18n'
 
-// Get i18n instance
 const { locale } = useI18n()
 
-// Computed property to check if we're in RTL mode
 const isRtl = computed(() => {
   return locale.value === 'ar'
 })
@@ -227,19 +225,13 @@ const toggleDropdown = (linkId) => {
   dropdownState[linkId] = !dropdownState[linkId]
 }
 
-// Switch language function
 const switchLanguage = (lang) => {
-  // Update the locale
   locale.value = lang
 
-  // Save to localStorage for persistence
   localStorage.setItem('selectedLanguage', lang)
 
-  // We're NOT setting the dir on documentElement
-  // so it doesn't affect the header and drawer
   // document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
-  // Optional: Add a console log to verify the change
   console.log('Language switched to:', lang)
 }
 
@@ -249,12 +241,9 @@ onMounted(() => {
     dropdownState[link.id] = false
   })
 
-  // Load saved language preference if available
   const savedLang = localStorage.getItem('selectedLanguage')
   if (savedLang) {
     locale.value = savedLang
-    // NOT setting document direction globally
-    // document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr'
   }
 })
 </script>
@@ -278,7 +267,6 @@ onMounted(() => {
   margin-left: 24px;
 }
 
-/* Language Selector Styles */
 .language-selector {
   position: relative;
   margin-right: 8px;
@@ -307,14 +295,12 @@ onMounted(() => {
   box-shadow: 0 0 0 2px white, 0 0 0 4px #1976d2;
 }
 
-/* Fixed drawer style to ensure it stays on the left */
 .fixed-drawer {
   left: 0 !important;
   right: auto !important;
   transform: translateX(0) !important;
 }
 
-/* RTL container - only applies to the main content area */
 .rtl-container {
   direction: rtl;
   text-align: right;
