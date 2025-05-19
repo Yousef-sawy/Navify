@@ -101,6 +101,7 @@
                       val => !!val || t('Subject is required'),
                       val => val.length <= 100 || t('Subject must be less than 100 characters')
                     ]"
+
                   >
                     <template v-slot:prepend>
                       <q-icon name="title" color="primary" />
@@ -1045,6 +1046,7 @@ onMounted(() => {
           status: 'In Progress',
           createdAt: new Date(2023, 10, 10, 11, 20)
         }
+        
       ]
 
       saveToLocalStorage(tickets.value)
@@ -1094,7 +1096,10 @@ const switchLanguage = (lang) => {
 .rtl-input.q-field--outlined:not(.q-field--float) .q-field__label {
   right: 10px;
 }
-
+.rtl-input .q-field__prepend {
+  padding-right: 0;
+  padding-left: 16px;
+}
 
 </style>
 

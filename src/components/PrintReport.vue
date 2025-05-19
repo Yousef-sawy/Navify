@@ -233,12 +233,12 @@ const getRowKey = (row, fallbackIndex) => {
 }
 
 const effectiveColumns = computed(() => {
-  // If columns are explicitly provided, use them
+  // This is will work lma el user provides columns
   if (props.columns && props.columns.length > 0) {
     return props.columns
   }
 
-  // Otherwise, dynamically generate columns from the data
+  // when the user wont provide el specifc columns aw right values
   if (props.tableData && props.tableData.length > 0) {
     // Gather all unique keys from all data items
     const allFields = new Set()

@@ -62,6 +62,7 @@
                       ]"
                       lazy-rules="ondemand"
                       class="q-mb-md"
+                      :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
                     >
                       <template v-slot:prepend>
                         <q-icon name="title" color="primary" />
@@ -85,6 +86,7 @@
                       ]"
                       lazy-rules="ondemand"
                       class="q-mb-md"
+                      :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
                     >
                       <template v-slot:prepend>
                         <q-icon name="link" color="primary" />
@@ -115,6 +117,7 @@
                       class="q-mb-md"
                       menu-anchor="bottom left"
                       menu-self="top left"
+                      :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
                     >
                       <template v-slot:prepend>
                         <q-icon name="style" color="primary" />
@@ -159,6 +162,7 @@
                       input-debounce="300"
                       @filter="filterParents"
                       class="q-mb-md"
+                      :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
                     >
                       <template v-slot:prepend>
                         <q-icon name="account_tree" color="primary" />
@@ -522,8 +526,57 @@ const validateParentSelection = (val) => {
 onMounted(() => {
   loadNavigation()
 })
-</script>
 
+const switchLanguage = (lang) => {
+  locale.value = lang
+  localStorage.setItem('selectedLanguage', lang)
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+}
+</script>
+<style>
+
+/* RTL input styling */
+.rtl-input.q-field--outlined .q-field__control {
+  direction: rtl;
+}
+
+.rtl-input .q-field__native,
+.rtl-input .q-field__prefix,
+.rtl-input .q-field__suffix,
+.rtl-input .q-field__input {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-input .q-field__label {
+  right: unset;
+  left: unset;
+  transform-origin: right top;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Fix for label position in outlined mode */
+.rtl-input.q-field--outlined.q-field--float .q-field__label {
+  transform: translateY(-50%) scale(0.75);
+  right: 8px;
+}
+
+/* When the field is not floating (empty) */
+.rtl-input.q-field--outlined:not(.q-field--float) .q-field__label {
+  right: 10px;
+}
+
+/* Icon positioning */
+.rtl-input .q-field__prepend {
+  padding-right: 0;
+  padding-left: 16px;
+}
+
+
+
+</style>
 <style scoped>
 .page-header {
   padding-bottom: 16px;
