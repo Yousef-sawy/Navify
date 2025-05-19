@@ -65,7 +65,11 @@ export default {
         subject: "الموضوع",
         priority: "الأولوية",
         status: "الحالة",
-        actions: "الإجراءات"
+        actions: "الإجراءات",
+        name: "الاسم",
+        email: "البريد الإلكتروني",
+        description: "الوصف",
+        createdAt: "تاريخ الإنشاء"
       },
 
       // Actions
@@ -81,7 +85,11 @@ export default {
         inProgress: "قيد التنفيذ",
         resolved: "تم الحل",
         closed: "مغلقة"
-      }
+      },
+      pagination: {
+      rowsPerPage: "السجلات في الصفحة:",
+      showingRows: "{from}-{to} من {total}"
+      },
     },
 
     // Ticket details

@@ -96,7 +96,7 @@
                     :placeholder="t('feedback.form.subjectPlaceholder')"
                     lazy-rules
                     bg-color="white"
-                    class="subject-input"
+                    :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
                     :rules="[
                       val => !!val || t('Subject is required'),
                       val => val.length <= 100 || t('Subject must be less than 100 characters')
@@ -120,7 +120,10 @@
                     bg-color="white"
                     rows="5"
                     :rules="[val => !!val || t('Please provide a description')]"
+                    :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
+
                   >
+
                     <template v-slot:prepend>
                       <q-icon name="description" color="primary" />
                     </template>
@@ -140,6 +143,8 @@
                         lazy-rules
                         bg-color="white"
                         :rules="[val => !!val || t('Name is required')]"
+                        :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
+
                       >
                         <template v-slot:prepend>
                           <q-icon name="person" color="primary" />
@@ -155,10 +160,13 @@
                         type="email"
                         lazy-rules
                         bg-color="white"
+
                         :rules="[
                           val => !!val || t('Email is required'),
                           val => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(val) || t('Please enter a valid email')
                         ]"
+                        :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
+
                       >
                         <template v-slot:prepend>
                           <q-icon name="email" color="primary" />
@@ -266,6 +274,7 @@
                 flat
                 :rows-per-page-options="[5, 10, 20, 0]"
                 class="tickets-table"
+
               >
                 <template v-slot:loading>
                   <q-inner-loading showing color="primary">
@@ -549,7 +558,7 @@ import { saveToLocalStorage, loadFromLocalStorage } from '../Functionality/FeedB
 import PrintReport from '../components/PrintReport.vue'
 
 import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+const { t , locale  } = useI18n()
 
 
 const $q = useQuasar()
@@ -589,25 +598,37 @@ const deleteDialog = ref(false)
 const selectedTicket = ref(null)
 
 
-const columns = [
+const columns = computed(() => [
   { name: 'id', label: t('feedback.table.columns.id'), field: 'id', sortable: true, align: 'left' },
   { name: 'type', label: t('feedback.table.columns.type'), field: 'type', sortable: true, align: 'left' },
   { name: 'subject', label: t('feedback.table.columns.subject'), field: 'subject', sortable: true, align: 'left' },
   { name: 'priority', label: t('feedback.table.columns.priority'), field: 'priority', sortable: true, align: 'left' },
   { name: 'status', label: t('feedback.table.columns.status'), field: 'status', sortable: true, align: 'left' },
   { name: 'actions', label: t('feedback.table.columns.actions'), field: 'actions', align: 'center' }
-]
+])
 
 const formatLabel = (key) => {
+  // First try to get translation from the feedback.table.columns path
+  const translationKey = `feedback.table.columns.${key}`;
+  const translated = t(translationKey);
+
+  // If translation is available (not equal to the key), use it
+  if (translated !== translationKey) {
+    return translated;
+  }
+
+  // Fallback to formatting the key name if no translation found
   return key
     .replace(/([A-Z])/g, ' $1')
     .replace(/_/g, ' ')
     .replace(/^\w/, c => c.toUpperCase())
-    .trim()
+    .trim();
 }
 
 const printColumns = computed(() => {
   if (!tickets.value || tickets.value.length === 0) return []
+
+  const currentLocale = locale.value;
 
   const allFields = new Set()
 
@@ -1032,7 +1053,51 @@ onMounted(() => {
     loading.value = false
   }, 1000)
 })
+
+const switchLanguage = (lang) => {
+  locale.value = lang
+  localStorage.setItem('selectedLanguage', lang)
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+}
 </script>
+<style>
+
+/* RTL input styling */
+.rtl-input.q-field--outlined .q-field__control {
+  direction: rtl;
+}
+
+.rtl-input .q-field__native,
+.rtl-input .q-field__prefix,
+.rtl-input .q-field__suffix,
+.rtl-input .q-field__input {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-input .q-field__label {
+  right: unset;
+  left: unset;
+  transform-origin: right top;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Fix for label position in outlined mode */
+.rtl-input.q-field--outlined.q-field--float .q-field__label {
+  transform: translateY(-50%) scale(0.75);
+  right: 8px;
+}
+
+/* When the field is not floating (empty) */
+.rtl-input.q-field--outlined:not(.q-field--float) .q-field__label {
+  right: 10px;
+}
+
+
+</style>
+
 
 <style scoped>
 .page-header {

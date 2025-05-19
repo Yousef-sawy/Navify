@@ -81,7 +81,11 @@ export default {
         inProgress: "In Progress",
         resolved: "Resolved",
         closed: "Closed"
-      }
+      },
+      pagination: {
+      rowsPerPage: "Records per page:",
+      showingRows: "{from}-{to} of {total}"
+      },
     },
 
     // Ticket details
