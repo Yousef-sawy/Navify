@@ -137,6 +137,7 @@
           :notesTitle="includeNotes ? notesTitle : ''"
           :notes_data="includeNotes ? notesData : ''"
           :rtl="true"
+          :excelFilename="reportTitle ? `${reportTitle.replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.xlsx` : null"
         />
       </div>
       <q-btn

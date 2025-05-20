@@ -122,25 +122,35 @@
         <q-separator />
 
         <q-card-actions align="right" class="bg-white q-py-sm print-actions">
-          <q-btn
-            outline
-            color="grey-7"
-            icon="cancel"
-            label="Cancel"
-            dense
-            @click="printDialog = false"
-            class="q-mr-sm"
-          />
-          <q-btn
-            unelevated
-            color="primary"
-            icon="picture_as_pdf"
-            label="Export as PDF"
-            dense
-            @click="exportAsPDF"
-            :loading="exporting"
-          />
-        </q-card-actions>
+        <q-btn
+          outline
+          color="grey-7"
+          icon="cancel"
+          label="Cancel"
+          dense
+          @click="printDialog = false"
+          class="q-mr-sm"
+        />
+        <q-btn
+          unelevated
+          color="green"
+          icon="table_view"
+          label="Export as Excel"
+          dense
+          @click="exportAsExcel"
+          :loading="exportingExcel"
+          class="q-mr-sm"
+        />
+        <q-btn
+          unelevated
+          color="primary"
+          icon="picture_as_pdf"
+          label="Export as PDF"
+          dense
+          @click="exportAsPDF"
+          :loading="exporting"
+        />
+      </q-card-actions>
       </q-card>
     </q-dialog>
   </div>
@@ -154,7 +164,7 @@ import { useQuasar } from 'quasar'
 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
+import * as XLSX from 'xlsx'  // Add this import
 import amiriRegular from '../fonts/Amiri-Regular.ttf'
 
 const $q = useQuasar()
@@ -172,6 +182,7 @@ const props = defineProps({
   notesTitle: String,
   notes_data: String,
 
+
   // Button appearance
     buttonColor: {
     type: String,
@@ -179,11 +190,11 @@ const props = defineProps({
   },
   buttonIcon: {
     type: String,
-    default: 'picture_as_pdf'
+    default: 'file_download'
   },
   buttonLabel: {
     type: String,
-    default: 'Generate Report'
+    default: 'Export  Report'
   },
   buttonFlat: Boolean,
   buttonOutline: Boolean,
@@ -192,6 +203,7 @@ const props = defineProps({
     default: 'md'
   },
 
+  excelFilename: String,
   // Custom formatters for table data
   formatters: Object,
 
@@ -220,6 +232,7 @@ const props = defineProps({
 
 const printDialog = ref(false)
 const exporting = ref(false)
+const exportingExcel = ref(false)  // Add this new re
 
 onMounted(() => {
   // Load the Amiri font to ensure it's available for Arabic text
@@ -842,6 +855,98 @@ const exportAsPDF = async () => {
   }
 }
 
+
+
+const exportAsExcel = () => {
+  exportingExcel.value = true
+
+  try {
+    const wb = XLSX.utils.book_new()
+
+    if (props.tableData && props.tableData.length > 0) {
+      // Convert table data to worksheet
+      const tableWorksheetData = [
+        // Header row
+        effectiveColumns.value.map(col => col.label)
+      ]
+
+      // Add data rows
+      props.tableData.forEach(row => {
+        const dataRow = effectiveColumns.value.map(col => {
+          let value = row[col.name]
+
+          // Apply formatters if available
+          if (props.formatters && props.formatters[col.name]) {
+            value = props.formatters[col.name].formatter(value, row)
+          } else if (col.format) {
+            value = col.format(value, row)
+          }
+
+          return value !== undefined ? value : ""
+        })
+
+        tableWorksheetData.push(dataRow)
+      })
+
+      const ws = XLSX.utils.aoa_to_sheet(tableWorksheetData)
+
+      // Add this worksheet to the workbook
+      XLSX.utils.book_append_sheet(wb, ws, props.tableTitle || 'Data')
+    }
+
+    // If summary data exists, create a summary sheet
+    if (props.summaryData && Object.keys(props.summaryData).length > 0) {
+      const summaryWorksheetData = [
+        ['Field', 'Value']
+      ]
+
+      Object.keys(props.summaryData).forEach(key => {
+        summaryWorksheetData.push([
+          formatLabel(key),
+          props.summaryData[key]
+        ])
+      })
+
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryWorksheetData)
+      XLSX.utils.book_append_sheet(wb, summaryWs, props.summaryTitle || 'Summary')
+    }
+
+    // Add notes if they exist
+    if (props.notes_data && props.notes_data.trim().length > 0) {
+      const notesWorksheetData = [
+        [props.notesTitle || 'Notes:'],
+        [props.notes_data]
+      ]
+
+      const notesWs = XLSX.utils.aoa_to_sheet(notesWorksheetData)
+      XLSX.utils.book_append_sheet(wb, notesWs, 'Notes')
+    }
+
+    // Generate the Excel file
+    const useArabicFormat = props.rtl === true || hasArabic(props.title || '')
+    const filename = props.excelFilename ||
+      (props.pdfFilename || `${props.title || 'report'}-${Date.now()}`).replace('.pdf', '.xlsx')
+
+    XLSX.writeFile(wb, filename)
+
+    exportingExcel.value = false
+    $q.notify({
+      color: 'positive',
+      message: useArabicFormat ? 'تم تصدير ملف Excel بنجاح' : 'Excel exported successfully',
+      icon: 'check_circle'
+    })
+  } catch (error) {
+    console.error('Excel export error:', error)
+    exportingExcel.value = false
+    $q.notify({
+      color: 'negative',
+      message: props.rtl
+        ? 'فشل تصدير ملف Excel: ' + error.message
+        : 'Failed to export Excel: ' + error.message,
+      icon: 'error'
+    })
+  }
+}
 ////
 /////
 //
