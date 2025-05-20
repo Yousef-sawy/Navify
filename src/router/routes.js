@@ -7,7 +7,7 @@ const routes = [
       { path: '/link', component: () => import('src/pages/NavigationBuilder.vue') },
       { path: 'test', component: () => import('pages/TestPage.vue') },
       { path: 'feedback', component: () => import('pages/FeedbackPage.vue') },
-      { path: 'print', component: () => import('pages/TestPrintPage.vue') },
+      { path: 'print', component: () => import('src/pages/PrintPage.vue') },
       // { path: 'playground', component: () => import('pages/PlayGround.vue') },
 
 
