@@ -190,7 +190,7 @@ const props = defineProps({
   },
   buttonIcon: {
     type: String,
-    default: 'file_download'
+    default: 'file_upload'
   },
   buttonLabel: {
     type: String,

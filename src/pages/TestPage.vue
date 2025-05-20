@@ -56,6 +56,19 @@
 import { ref } from 'vue';
 import PDFExport from '../components/PrintReport.vue';
 
+
+
+// English columns
+const salesColumns = ref([
+  { name: 'month', label: 'Month', field: 'month', sortable: true },
+  { name: 'revenue', label: 'Revenue ($)', field: 'revenue', sortable: true, format: val => `$${val.toLocaleString()}` },
+  { name: 'growth', label: 'Growth (%)', field: 'growth', sortable: true, format: val => `${val > 0 ? '+' : ''}${val}%` },
+  { name: 'product', label: 'Product', field: 'product', sortable: true },
+  { name: 'units', label: 'Units Sold', field: 'units', sortable: true, format: val => val.toLocaleString() },
+  { name: 'profit', label: 'Profit ($)', field: 'profit', sortable: true, format: val => `$${val.toLocaleString()}` },
+  { name: 'notes', label: 'Notes', field: 'notes' }
+]);
+
 // Sample sales data - English
 const salesData = ref([
   { id: 1, month: 'January', revenue: 45000, growth: 5.2, product: 'Product A', units: 1200, cost: 32000, profit: 13000, status: 'Completed', notes: 'Strong start to the year' },
@@ -67,17 +80,6 @@ const salesData = ref([
   { id: 7, month: 'July', revenue: 52500, growth: -2.8, product: 'Product C', units: 1400, cost: 37500, profit: 15000, status: 'Completed', notes: 'Summer slowdown' },
   { id: 8, month: 'August', revenue: 53000, growth: 1.0, product: 'Product B', units: 1425, cost: 38000, profit: 15000, status: 'Completed', notes: 'Back to school promotion' },
   { id: 9, month: 'September', revenue: 55000, growth: 3.8, product: 'Product A', units: 1475, cost: 39000, profit: 16000, status: 'Completed', notes: 'Fall collection launch' },
-]);
-
-// English columns
-const salesColumns = ref([
-  { name: 'month', label: 'Month', field: 'month', sortable: true },
-  { name: 'revenue', label: 'Revenue ($)', field: 'revenue', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'growth', label: 'Growth (%)', field: 'growth', sortable: true, format: val => `${val > 0 ? '+' : ''}${val}%` },
-  { name: 'product', label: 'Product', field: 'product', sortable: true },
-  { name: 'units', label: 'Units Sold', field: 'units', sortable: true, format: val => val.toLocaleString() },
-  { name: 'profit', label: 'Profit ($)', field: 'profit', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'notes', label: 'Notes', field: 'notes' }
 ]);
 
 // English summary data

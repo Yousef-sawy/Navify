@@ -160,7 +160,6 @@ import PDFExport from '../components/PrintReport.vue';
 
 const $q = useQuasar();
 
-// Form data
 const reportTitle = ref('');
 const reportSubtitle = ref('');
 const tableTitle = ref('');
@@ -169,21 +168,17 @@ const includeNotes = ref(false);
 const notesTitle = ref('');
 const notesData = ref('');
 
-// Validation states
 const isJsonValid = ref(null);
 const jsonValidationError = ref('');
 
-// Final processed data
 const finalData = ref([]);
 const finalColumns = ref([]);
 const uniqueParents = ref([]);
 
-// Computed property for effective table title (with default value)
 const effectiveTableTitle = computed(() => {
   return tableTitle.value || 'Data Table';
 });
 
-// Computed property to check if form is valid
 const isFormValid = computed(() => {
   const basicInfoValid = !!reportTitle.value; // Only report title is required
   const dataValid = isJsonValid.value === true;
@@ -222,7 +217,7 @@ const hasDuplicateIds = (data) => {
   return false;
 };
 
-// Validate basic JSON data (only check for duplicates)
+// Validate basic JSON data only check for duplicates
 const validateJsonConsistency = (parsedData) => {
   // Convert single object to array for consistent processing
   const data = Array.isArray(parsedData) ? parsedData : [parsedData];
@@ -294,10 +289,8 @@ const validateAndPreviewJson = () => {
     let jsonToValidate = jsonData.value;
 
     try {
-      // Try to parse the JSON
       JSON.parse(jsonToValidate);
     } catch (e) {
-      // If parsing fails, show the error
       isJsonValid.value = false;
       jsonValidationError.value = 'Invalid JSON format. Please check for proper syntax including quotes and commas.';
       return;
@@ -332,12 +325,10 @@ const validateAndPreviewJson = () => {
 
 // Validate all form data when disabled button is clicked
 const validateAll = () => {
-  // Check if JSON validation needs to be run
   if (!isJsonValid.value) {
     validateAndPreviewJson();
   }
 
-  // Show a notification about what's missing
   if (!reportTitle.value) {
     $q.notify({
       color: 'negative',
@@ -369,19 +360,16 @@ const validateAll = () => {
   max-height: 200px;
 }
 
-/* Make textareas scrollable with fixed height */
 .scrollable-textarea :deep(.q-field__native) {
   max-height: 200px;
   overflow-y: auto !important;
 }
 
-/* Ensure the textarea doesn't grow beyond the container */
 .scrollable-textarea :deep(textarea) {
   resize: none !important;
   overflow-y: auto !important;
 }
 
-/* Code example styling */
 .code-example {
   background-color: #f5f5f5;
   padding: 8px;
