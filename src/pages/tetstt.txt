@@ -1,221 +1,476 @@
 <template>
-  <q-page padding>
-    <div class="q-pa-md">
-      <div class="text-h4 q-mb-lg text-right">{{ t('test.title') }}</div>
+  <div class="q-pa-md">
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Report Information</div>
+        <div class="row q-col-gutter-md q-mt-sm">
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="reportTitle"
+              label="Report Title *"
+              :rules="[val => !!val || 'Title is required']"
+              outlined
+              dense
+            />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="reportSubtitle"
+              label="Report Subtitle"
+              outlined
+              dense
+            />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="tableTitle"
+              label="Table Title *"
+              :rules="[val => !!val || 'Table title is required']"
+              outlined
+              dense
+            />
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
 
-      <div class="row q-col-gutter-md">
-        <div class="col-12 col-md-4">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6 text-right">{{ t('test.summary') }}</div>
-            </q-card-section>
-            <q-card-section>
-              <p class="text-right">{{ t('test.description') }}</p>
-            </q-card-section>
-            <q-card-actions>
-              <print-report
-                :title="t('test.report.title')"
-                :subtitle="t('test.report.subtitle')"
-                :tableTitle="t('test.report.tableTitle')"
-                :table-data="arabicTickets"
-                :columns="printColumns"
-                :summary-data="ticketSummary"
-                :formatters="ticketFormatters"
-                :button-label="t('test.report.print')"
-                button-icon="print"
-                button-outline
-                button-color="primary"
-                :notesTitle="t('test.report.notesTitle')"
-                :notes_data="t('test.report.notesData')"
-                pdf-filename="arabic-test-report.pdf"
-                :rtl="true"
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Table Data</div>
+        <q-tabs
+          v-model="dataInputMethod"
+          dense
+          class="text-grey"
+          active-color="primary"
+          indicator-color="primary"
+          align="justify"
+          narrow-indicator
+        >
+          <q-tab name="json" label="JSON Data" />
+          <q-tab name="keyValue" label="Key-Value Pairs" />
+        </q-tabs>
+
+        <q-tab-panels v-model="dataInputMethod" animated>
+          <!-- JSON Input Method -->
+          <q-tab-panel name="json">
+            <q-input
+              v-model="jsonData"
+              type="textarea"
+              filled
+              class="scrollable-textarea"
+              label="Enter your data in JSON format"
+              hint="Single object or array of objects with consistent structure"
+              :rules="[
+                val => !!val || 'JSON data is required',
+                val => validateJson(val) || 'Invalid JSON format'
+              ]"
+            />
+            <div class="q-mt-sm">
+              <q-btn
+                color="primary"
+                label="Validate JSON"
+                @click="validateAndPreviewJson"
+                class="q-mr-sm"
               />
-            </q-card-actions>
-          </q-card>
+              <q-badge v-if="isJsonValid === true" color="positive" label="Valid JSON" />
+              <q-badge v-else-if="isJsonValid === false" color="negative" label="Invalid JSON" />
+            </div>
+            <div v-if="jsonValidationError" class="text-negative q-mt-sm">
+              {{ jsonValidationError }}
+            </div>
+          </q-tab-panel>
+
+          <!-- Key-Value Input Method -->
+          <q-tab-panel name="keyValue">
+            <div class="q-mb-md">
+              <div class="text-subtitle2 q-mb-sm">Column Definitions</div>
+              <q-input
+                v-model="columnsDefinition"
+                type="textarea"
+                filled
+                class="scrollable-textarea"
+                label="Enter column definitions"
+                hint="Format: [{name: 'id', label: 'ID', field: 'id'}, ...]"
+                :rules="[
+                  val => !!val || 'Column definitions are required',
+                  val => validateJson(val) || 'Invalid JSON format for columns'
+                ]"
+              />
+            </div>
+
+            <div class="q-mb-md">
+              <div class="text-subtitle2 q-mb-sm">Row Data</div>
+              <q-input
+                v-model="rowsData"
+                type="textarea"
+                filled
+                class="scrollable-textarea"
+                label="Enter row data"
+                hint="Format: [{id: 1, name: 'Example', ...}, ...]"
+                :rules="[
+                  val => !!val || 'Row data is required',
+                  val => validateJson(val) || 'Invalid JSON format for rows'
+                ]"
+              />
+            </div>
+
+            <div class="q-mt-sm">
+              <q-btn
+                color="primary"
+                label="Validate Key-Value Data"
+                @click="validateAndPreviewKeyValue"
+                class="q-mr-sm"
+              />
+              <q-badge v-if="isKeyValueValid === true" color="positive" label="Valid Data" />
+              <q-badge v-else-if="isKeyValueValid === false" color="negative" label="Invalid Data" />
+            </div>
+            <div v-if="keyValueValidationError" class="text-negative q-mt-sm">
+              {{ keyValueValidationError }}
+            </div>
+          </q-tab-panel>
+        </q-tab-panels>
+      </q-card-section>
+    </q-card>
+
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="row items-center">
+          <div class="text-h6">Notes Section</div>
+          <q-space />
+          <q-toggle v-model="includeNotes" label="Include Notes" />
         </div>
 
-        <div class="col-12 col-md-8">
-          <q-table
-            :rows="arabicTickets"
-            :columns="tableColumns"
-            row-key="id"
-            :pagination="{ rowsPerPage: 10 }"
-            :loading="loading"
-            binary-state-sort
-            flat
-            bordered
-            class="rtl-table"
-          >
-            <template v-slot:top>
-              <div class="text-h6 text-right full-width q-pb-md">{{ t('test.table.title') }}</div>
-            </template>
-          </q-table>
+        <div v-if="includeNotes" class="row q-col-gutter-md q-mt-sm">
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="notesTitle"
+              label="Notes Title"
+              outlined
+              dense
+              :rules="[val => !!val || 'Notes title is required when notes are enabled']"
+            />
+          </div>
+          <div class="col-12 col-md-8">
+            <q-input
+              v-model="notesData"
+              type="textarea"
+              label="Notes Content"
+              outlined
+              class="scrollable-textarea"
+              :rules="[val => !!val || 'Notes content is required when notes are enabled']"
+            />
+          </div>
         </div>
+      </q-card-section>
+    </q-card>
+
+    <!-- Export button section -->
+    <div class="row justify-end q-mt-md">
+      <div v-if="isFormValid">
+        <PDFExport
+          :title="reportTitle"
+          :subtitle="reportSubtitle"
+          :tableTitle="tableTitle"
+          :tableData="finalData"
+          :columns="finalColumns"
+          :notesTitle="includeNotes ? notesTitle : ''"
+          :notes_data="includeNotes ? notesData : ''"
+          buttonColor="primary"
+          buttonLabel="Export PDF Report"
+          buttonIcon="picture_as_pdf"
+        />
       </div>
+      <q-btn
+        v-else
+        color="primary"
+        label="Export PDF Report"
+        icon="picture_as_pdf"
+        disabled
+        class="q-mr-sm"
+        @click="validateAll"
+      />
     </div>
-  </q-page>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import PrintReport from '../components/PrintReport.vue';
+import { ref, computed, watch } from 'vue';
+import { useQuasar } from 'quasar';
+import PDFExport from '../components/PrintReport.vue'; // Adjust path as needed
 
-const { t } = useI18n();
-const loading = ref(false);
+const $q = useQuasar();
 
-// Sample data for Arabic tickets
-const arabicTickets = ref([
-  {
-    id: 1,
-    title: 'تحسين واجهة المستخدم',
-    status: 'مفتوح',
-    priority: 'عالية',
-    category: 'الواجهة',
-    created: '2023-06-15',
-    assignee: 'محمد أحمد',
-    description: 'نحتاج إلى تحسين واجهة المستخدم لتكون أكثر سهولة واستجابة للمستخدمين العرب.'
-  },
-  {
-    id: 2,
-    title: 'مشكلة في تسجيل الدخول',
-    status: 'قيد التنفيذ',
-    priority: 'قصوى',
-    category: 'الأمان',
-    created: '2023-06-16',
-    assignee: 'فاطمة علي',
-    description: 'بعض المستخدمين يواجهون مشكلة في تسجيل الدخول عند استخدام متصفح سفاري.'
-  },
-  {
-    id: 3,
-    title: 'إضافة خاصية البحث المتقدم',
-    status: 'جديد',
-    priority: 'متوسطة',
-    category: 'الميزات',
-    created: '2023-06-17',
-    assignee: 'أحمد محمود',
-    description: 'المستخدمون يطلبون خاصية البحث المتقدم للعثور على المنتجات بشكل أسرع.'
-  },
-  {
-    id: 4,
-    title: 'تحسين أداء التطبيق',
-    status: 'مغلق',
-    priority: 'منخفضة',
-    category: 'الأداء',
-    created: '2023-06-18',
-    assignee: 'عمر خالد',
-    description: 'التطبيق بطيء جدًا عند تحميل قائمة المنتجات الكبيرة.'
-  },
-  {
-    id: 5,
-    title: 'إصلاح الأخطاء في الترجمة',
-    status: 'مفتوح',
-    priority: 'عالية',
-    category: 'الترجمة',
-    created: '2023-06-19',
-    assignee: 'سارة محمد',
-    description: 'هناك بعض الأخطاء في ترجمة بعض النصوص في التطبيق.'
-  },
-  {
-    id: 6,
-    title: 'تحديث قاعدة البيانات',
-    status: 'تم التحقق',
-    priority: 'متوسطة',
-    category: 'البنية التحتية',
-    created: '2023-06-20',
-    assignee: 'حسن علي',
-    description: 'نحتاج إلى تحديث قاعدة البيانات لتحسين الأداء وإضافة حقول جديدة.'
-  },
-]);
+// Form data
+const reportTitle = ref('');
+const reportSubtitle = ref('');
+const tableTitle = ref('');
+const dataInputMethod = ref('json');
+const jsonData = ref('');
+const columnsDefinition = ref('');
+const rowsData = ref('');
+const includeNotes = ref(false);
+const notesTitle = ref('');
+const notesData = ref('');
 
-// Define columns for the table
-const tableColumns = [
-  { name: 'id', label: t('test.table.id'), field: 'id', sortable: true, align: 'right' },
-  { name: 'title', label: t('test.table.title'), field: 'title', sortable: true, align: 'right' },
-  { name: 'status', label: t('test.table.status'), field: 'status', sortable: true, align: 'right' },
-  { name: 'priority', label: t('test.table.priority'), field: 'priority', sortable: true, align: 'right' },
-  { name: 'assignee', label: t('test.table.assignee'), field: 'assignee', sortable: true, align: 'right' },
-  { name: 'created', label: t('test.table.created'), field: 'created', sortable: true, align: 'right' },
-];
+// Validation states
+const isJsonValid = ref(null);
+const isKeyValueValid = ref(null);
+const jsonValidationError = ref('');
+const keyValueValidationError = ref('');
 
-// Columns for the print report
-const printColumns = [
-  { name: 'id', label: t('test.table.id'), field: 'id', align: 'right' },
-  { name: 'title', label: t('test.table.title'), field: 'title', align: 'right' },
-  { name: 'status', label: t('test.table.status'), field: 'status', align: 'right' },
-  { name: 'priority', label: t('test.table.priority'), field: 'priority', align: 'right' },
-  { name: 'category', label: t('test.table.category'), field: 'category', align: 'right' },
-  { name: 'assignee', label: t('test.table.assignee'), field: 'assignee', align: 'right' },
-  { name: 'created', label: t('test.table.created'), field: 'created', align: 'right' },
-  { name: 'description', label: t('test.table.description'), field: 'description', align: 'right' },
-];
+// Final processed data
+const finalData = ref([]);
+const finalColumns = ref([]);
 
-// Summary data for the print report
-const ticketSummary = {
-  'إجمالي التذاكر': arabicTickets.value.length,
-  'التذاكر المفتوحة': arabicTickets.value.filter(t => t.status === 'مفتوح').length,
-  'التذاكر قيد التنفيذ': arabicTickets.value.filter(t => t.status === 'قيد التنفيذ').length,
-  'التذاكر المغلقة': arabicTickets.value.filter(t => t.status === 'مغلق').length,
-  'أولوية عالية': arabicTickets.value.filter(t => t.priority === 'عالية').length,
-  'أولوية متوسطة': arabicTickets.value.filter(t => t.priority === 'متوسطة').length,
-  'أولوية منخفضة': arabicTickets.value.filter(t => t.priority === 'منخفضة').length,
-};
+// Computed property to check if form is valid
+const isFormValid = computed(() => {
+  const basicInfoValid = !!reportTitle.value && !!tableTitle.value;
+  const dataValid = (dataInputMethod.value === 'json' && isJsonValid.value === true) ||
+                    (dataInputMethod.value === 'keyValue' && isKeyValueValid.value === true);
+  const notesValid = !includeNotes.value || (includeNotes.value && !!notesTitle.value && !!notesData.value);
 
-// Formatters for the print report
-const ticketFormatters = {
-  status: {
-    formatter: (value) => value,
-    component: 'div',
-    props: (value) => {
-      let color = 'grey';
-      if (value === 'مفتوح') color = 'blue';
-      if (value === 'قيد التنفيذ') color = 'orange';
-      if (value === 'مغلق') color = 'green';
-      if (value === 'جديد') color = 'purple';
+  return basicInfoValid && dataValid && notesValid;
+});
 
-      return {
-        class: `text-${color} text-right`
-      };
-    }
-  },
-  priority: {
-    formatter: (value) => value,
-    component: 'div',
-    props: (value) => {
-      let color = 'grey';
-      if (value === 'عالية') color = 'negative';
-      if (value === 'متوسطة') color = 'warning';
-      if (value === 'منخفضة') color = 'positive';
-      if (value === 'قصوى') color = 'deep-orange';
+// Watch for changes in input method to reset validation
+watch(dataInputMethod, () => {
+  if (dataInputMethod.value === 'json') {
+    isKeyValueValid.value = null;
+  } else {
+    isJsonValid.value = null;
+  }
+});
 
-      return {
-        class: `text-${color} text-right`
-      };
-    }
-  },
-  created: {
-    formatter: (value) => {
-      if (!value) return '';
-      const date = new Date(value);
-      return new Intl.DateTimeFormat('ar-EG', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }).format(date);
-    }
-  },
-  description: {
-    formatter: (value) => value,
-    wrapText: true,
-    maxLines: 2
+// JSON validation function
+const validateJson = (jsonString) => {
+  try {
+    if (!jsonString) return false;
+    const parsed = JSON.parse(jsonString);
+    return true;
+  } catch (error) {
+    return false;
   }
 };
+
+// Check for duplicate IDs in data
+const hasDuplicateIds = (data) => {
+  if (!Array.isArray(data) || data.length <= 1) return false;
+
+  const ids = new Set();
+
+  for (const item of data) {
+    if (item.id !== undefined) {
+      if (ids.has(item.id)) {
+        return true; // Found duplicate ID
+      }
+      ids.add(item.id);
+    }
+  }
+
+  return false;
+};
+
+// Validate consistency in JSON data
+const validateJsonConsistency = (parsedData) => {
+  // Convert single object to array for consistent processing
+  const data = Array.isArray(parsedData) ? parsedData : [parsedData];
+
+  if (data.length === 0) {
+    return { valid: false, error: 'Data cannot be empty' };
+  }
+
+  // Check for duplicate IDs
+  if (hasDuplicateIds(data)) {
+    return { valid: false, error: 'Data contains duplicate ID values' };
+  }
+
+  // For a single object, no further consistency check needed
+  if (data.length === 1) {
+    return { valid: true };
+  }
+
+  // Get keys from first object as reference
+  const firstObjectKeys = Object.keys(data[0]);
+
+  // Check that all objects have the same keys
+  for (let i = 1; i < data.length; i++) {
+    const currentKeys = Object.keys(data[i]);
+
+    // Check if current object has all required keys
+    const missingKeys = firstObjectKeys.filter(key => !currentKeys.includes(key));
+    if (missingKeys.length > 0) {
+      return {
+        valid: false,
+        error: `Row ${i+1} is missing required fields: ${missingKeys.join(', ')}`
+      };
+    }
+
+    // Check for extra keys not in the first object
+    const extraKeys = currentKeys.filter(key => !firstObjectKeys.includes(key));
+    if (extraKeys.length > 0) {
+      return {
+        valid: false,
+        error: `Row ${i+1} has extra fields not present in all rows: ${extraKeys.join(', ')}`
+      };
+    }
+  }
+
+  return { valid: true };
+};
+
+// Validate and process JSON data
+const validateAndPreviewJson = () => {
+  try {
+    const parsed = JSON.parse(jsonData.value);
+    const dataArray = Array.isArray(parsed) ? parsed : [parsed];
+    const consistencyCheck = validateJsonConsistency(parsed);
+
+    if (consistencyCheck.valid) {
+      isJsonValid.value = true;
+      jsonValidationError.value = '';
+
+      // Create columns automatically from the first row
+      if (dataArray.length > 0) {
+        const firstRow = dataArray[0];
+        finalColumns.value = Object.keys(firstRow).map(key => ({
+          name: key,
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+          field: key,
+          sortable: true
+        }));
+
+        finalData.value = dataArray;
+      }
+    } else {
+      isJsonValid.value = false;
+      jsonValidationError.value = consistencyCheck.error;
+    }
+  } catch (error) {
+    isJsonValid.value = false;
+    jsonValidationError.value = 'Error in JSON code';
+  }
+};
+
+// Validate and process Key-Value data
+const validateAndPreviewKeyValue = () => {
+  try {
+    const columns = JSON.parse(columnsDefinition.value);
+    const rows = JSON.parse(rowsData.value);
+
+    if (!Array.isArray(columns) || columns.length === 0) {
+      isKeyValueValid.value = false;
+      keyValueValidationError.value = 'Columns must be a non-empty array';
+      return;
+    }
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      isKeyValueValid.value = false;
+      keyValueValidationError.value = 'Rows must be a non-empty array';
+      return;
+    }
+
+    // Check for duplicate IDs in rows
+    if (hasDuplicateIds(rows)) {
+      isKeyValueValid.value = false;
+      keyValueValidationError.value = 'Row data contains duplicate ID values';
+      return;
+    }
+
+    // Check that all columns have name, label, and field properties
+    const invalidColumns = columns.filter(col =>
+      !col.name || !col.label || !col.field
+    );
+
+    if (invalidColumns.length > 0) {
+      isKeyValueValid.value = false;
+      keyValueValidationError.value = 'All columns must have name, label, and field properties';
+      return;
+    }
+
+    // Check that all rows have all the fields defined in columns
+    const requiredFields = columns.map(col => col.field);
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const missingFields = requiredFields.filter(field => !(field in row));
+
+      if (missingFields.length > 0) {
+        isKeyValueValid.value = false;
+        keyValueValidationError.value = `Row ${i+1} is missing required fields: ${missingFields.join(', ')}`;
+        return;
+      }
+    }
+
+    isKeyValueValid.value = true;
+    keyValueValidationError.value = '';
+    finalColumns.value = columns;
+    finalData.value = rows;
+
+  } catch (error) {
+    isKeyValueValid.value = false;
+    keyValueValidationError.value = 'Error in JSON code';
+  }
+};
+
+// Validate all form data when disabled button is clicked
+const validateAll = () => {
+  // Check which validation needs to be run
+  if (dataInputMethod.value === 'json' && !isJsonValid.value) {
+    validateAndPreviewJson();
+  } else if (dataInputMethod.value === 'keyValue' && !isKeyValueValid.value) {
+    validateAndPreviewKeyValue();
+  }
+
+  // Show a notification about what's missing
+  if (!reportTitle.value || !tableTitle.value) {
+    $q.notify({
+      color: 'negative',
+      message: 'Please fill in all required fields (Report Title, Table Title)',
+      icon: 'error'
+    });
+  } else if (!isJsonValid.value && !isKeyValueValid.value) {
+    $q.notify({
+      color: 'negative',
+      message: 'Please validate your data before generating a report',
+      icon: 'error'
+    });
+  } else if (includeNotes.value && (!notesTitle.value || !notesData.value)) {
+    $q.notify({
+      color: 'negative',
+      message: 'Please complete the notes section or disable it',
+      icon: 'error'
+    });
+  }
+};
+
+/////
+////
+////
+///
 </script>
 
 <style scoped>
-.rtl-table {
-  direction: rtl;
+.q-card {
+  border-radius: 8px;
 }
+
+.scrollable-textarea {
+  max-height: 200px;
+}
+
+/* Make textareas scrollable with fixed height */
+.scrollable-textarea :deep(.q-field__native) {
+  max-height: 200px;
+  overflow-y: auto !important;
+}
+
+/* Ensure the textarea doesn't grow beyond the container */
+.scrollable-textarea :deep(textarea) {
+  resize: none !important;
+  overflow-y: auto !important;
+}
+
+
 </style>
 
 
@@ -224,26 +479,6 @@ const ticketFormatters = {
 
 
 
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????
-??????????????????????????????????????????????v
 
 
 
@@ -251,484 +486,37 @@ const ticketFormatters = {
 
 
 
-<script setup>
-import { ref, computed } from 'vue'
-import { useQuasar } from 'quasar'
-
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
-// Import fonts with Arabic support
-import amiriRegular from '../fonts/Amiri-Regular.ttf' // Arabic font (replace with your actual Arabic font)
-import Noto from '../fonts/NotoSans_Condensed-Regular.ttf'
-
-const $q = useQuasar()
-
-// Props for component configuration
-const props = defineProps({
-  // Content props
-  title: String,
-  subtitle: String,
-  tableTitle: String,
-  tableData: Array,
-  columns: Array,
-  summaryData: Object,
-  notes: String,
-
-  // Button appearance
-  buttonColor: String,
-  buttonIcon: String,
-  buttonLabel: String,
-  buttonFlat: Boolean,
-  buttonOutline: Boolean,
-  buttonRound: Boolean,
-  buttonSize: String,
-
-  // Custom formatters for table data
-  formatters: Object,
-
-  // PDF options
-  pdfFilename: String,
-  pdfOptions: Object,
-
-  // Exclusion settings
-  excludeFields: {
-    type: Array,
-    default: () => ['actions', '_id', '__v']
+  [
+    {
+      "name": "id",
+      "label": "ID",
+      "field": "id",
+      "align": "left"
+    },
+  {
+    "name": "month",
+    "label": "Month",
+    "field": "month",
+    "align": "left"
   },
-
-  // Row key field (for unique identification)
-  rowKey: {
-    type: String,
-    default: 'id'
+  {
+    "name": "revenue",
+    "label": "Revenue",
+    "field": "revenue",
+    "align": "right"
   },
-
-  // Language options
-  rtl: {
-    type: Boolean,
-    default: false
+  {
+    "name": "growth",
+    "label": "Growth (%)",
+    "field": "growth",
+    "align": "right"
   }
-})
-
-// State
-const printDialog = ref(false)
-const exporting = ref(false)
-
-// Helper method to get a unique key for each row
-const getRowKey = (row, fallbackIndex) => {
-  // Try to use the specified rowKey field
-  if (props.rowKey && row[props.rowKey] !== undefined) {
-    return row[props.rowKey]
-  }
-
-  // If that fails, try common ID fields
-  for (const key of ['id', '_id', 'key', 'uid']) {
-    if (row[key] !== undefined) return row[key]
-  }
-
-  // Last resort: use the array index
-  return fallbackIndex
-}
-
-// Dynamically generate columns based on the actual data
-const effectiveColumns = computed(() => {
-  // If columns are explicitly provided, use them
-  if (props.columns && props.columns.length > 0) {
-    return props.columns
-  }
-
-  // Otherwise, dynamically generate columns from the data
-  if (props.tableData && props.tableData.length > 0) {
-    // Gather all unique keys from all data items
-    const allFields = new Set()
-
-    props.tableData.forEach(item => {
-      Object.keys(item).forEach(key => {
-        if (!props.excludeFields.includes(key)) {
-          allFields.add(key)
-        }
-      })
-    })
-
-    // Convert to array and sort alphabetically (no assumptions about field order)
-    const sortedFields = [...allFields].sort((a, b) => a.localeCompare(b))
-
-    // Generate columns with equal widths by default
-    const columnWidth = `${Math.floor(100 / Math.min(sortedFields.length, 10))}%`
-
-    return sortedFields.map(field => {
-      return {
-        name: field,
-        label: formatLabel(field),
-        field: field,
-        align: props.rtl ? 'right' : 'left',
-        style: `width: ${columnWidth}`
-      }
-    })
-  }
-
-  return []
-})
-
-// Methods
-const openPrintDialog = () => {
-  printDialog.value = true
-}
-
-const formatLabel = (key) => {
-  return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/_/g, ' ')
-    .replace(/^\w/, c => c.toUpperCase())
-    .trim()
-}
-
-const getFormatterProps = (propsConfig, value, row) => {
-  if (typeof propsConfig === 'function') {
-    return propsConfig(value, row)
-  } else if (typeof propsConfig === 'object') {
-    const result = {}
-
-    Object.keys(propsConfig).forEach(key => {
-      if (typeof propsConfig[key] === 'function') {
-        result[key] = propsConfig[key](value, row)
-      } else {
-        result[key] = propsConfig[key]
-      }
-    })
-
-    return result
-  }
-
-  return propsConfig || {}
-}
-
-const formatDate = (date, includeTime = false) => {
-  if (!date) return '-'
-  const d = new Date(date)
-
-  if (includeTime) {
-    return d.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    })
-  } else {
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
-}
-
-const hasArabic = (text) => {
-  if (!text || typeof text !== 'string') return false;
-  const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-  return arabicPattern.test(text);
-}
-
-// Convert fonts to base64 string
-const getBase64Font = async (fontPath) => {
-  try {
-    const response = await fetch(fontPath);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(',')[1]);
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error('Failed to load font:', error);
-    return null;
-  }
-}
-
-const exportAsPDF = async () => {
-  exporting.value = true
-
-  try {
-    // Load the fonts data
-    const notoFontData = await getBase64Font(Noto);
-    const arabicFontData = await getBase64Font(amiriRegular);
-
-    const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4'
-    })
-
-    doc.addFileToVFS('NotoSans_Condensed-Regular.ttf', notoFontData);
-    doc.addFont('NotoSans_Condensed-Regular.ttf', 'NotoSans', 'normal');
-
-    doc.addFileToVFS('Amiri-Regular.ttf', arabicFontData);
-    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-
-
-    doc.setFont('NotoSans');
-
-    doc.setFontSize(16);
-
-    if (hasArabic(props.title)) {
-      doc.setFont('Amiri');
-      doc.text(props.title || 'Report', doc.internal.pageSize.width / 2, 15, {
-        align: 'center',
-
-      });
-    } else {
-      doc.setFont('NotoSans');
-      doc.text(props.title || 'Report', doc.internal.pageSize.width / 2, 15, {
-        align: 'center'
-      });
-    }
-
-    if (props.subtitle) {
-      doc.setFontSize(12);
-
-      if (hasArabic(props.subtitle)) {
-        doc.setFont('Amiri');
-        doc.text(props.subtitle, doc.internal.pageSize.width / 2, 22, {
-          align: 'center',
-
-        });
-      } else {
-        doc.setFont('NotoSans');
-        doc.text(props.subtitle, doc.internal.pageSize.width / 2, 22, {
-          align: 'center'
-        });
-      }
-    }
-
-    doc.setFontSize(10);
-    doc.setFont('NotoSans');
-    const dateText = `Generated on: ${formatDate(new Date(), true)}`;
-    doc.text(dateText, doc.internal.pageSize.width - 15, 30, { align: 'right' });
-
-    let yPosition = 35;
-
-    if (props.summaryData && Object.keys(props.summaryData).length) {
-      doc.setFontSize(12);
-
-      if (hasArabic('Summary')) {
-        doc.setFont('Amiri');
-        doc.text('Summary', 15, yPosition);
-      } else {
-        doc.setFont('NotoSans');
-        doc.text('Summary', 15, yPosition);
-      }
-
-      yPosition += 5;
-
-      const summaryRows = [];
-      const keys = Object.keys(props.summaryData);
-
-      // Create rows with 2 key-value pairs per row for better layout
-      for (let i = 0; i < keys.length; i += 2) {
-        const row = [];
-        row.push(formatLabel(keys[i]));
-        row.push(props.summaryData[keys[i]]);
-
-        if (i + 1 < keys.length) {
-          row.push(formatLabel(keys[i + 1]));
-          row.push(props.summaryData[keys[i + 1]]);
-        } else {
-          row.push('');
-          row.push('');
-        }
-
-        summaryRows.push(row);
-      }
-
-      // Using imported autoTable
-      autoTable(doc, {
-        startY: yPosition + 2,
-        head: [['Field', 'Value', 'Field', 'Value']],
-        body: summaryRows,
-        theme: 'grid',
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-          font: 'NotoSans',
-        },
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-          font: 'NotoSans',
-        },
-        didParseCell: function(data) {
-          // Set appropriate font and direction for Arabic text
-          if (hasArabic(data.cell.text)) {
-            data.cell.styles.font = 'Amiri';
-            data.cell.styles.halign = 'right';
-          }
-        },
-        margin: { left: 15, right: 15 }
-      });
-
-      yPosition = doc.lastAutoTable.finalY + 10;
-    }
-
-    if (props.tableData && props.tableData.length) {
-      doc.setFontSize(12);
-
-      if (hasArabic(props.tableTitle)) {
-        doc.setFont('Amiri');
-        doc.text(props.tableTitle || 'Data', 15, yPosition, { R2L: true });
-      } else {
-        doc.setFont('NotoSans');
-        doc.text(props.tableTitle || 'Data', 15, yPosition);
-      }
-
-      yPosition += 5;
-
-      const headers = effectiveColumns.value.map(col => col.label);
-
-      const data = props.tableData.map(row => {
-        return effectiveColumns.value.map(col => {
-          let value = row[col.name];
-
-          if (props.formatters && props.formatters[col.name]) {
-            value = props.formatters[col.name].formatter(value, row);
-          } else if (col.format) {
-            value = col.format(value, row);
-          }
-
-          return value !== undefined && value !== null ? String(value) : '';
-        });
-      });
-
-      const columnWidths = {};
-      effectiveColumns.value.forEach((col, index) => {
-        const colName = col.name.toLowerCase();
-
-        if (colName.includes('id') && colName.length < 5) {
-          columnWidths[index] = { cellWidth: 15 };
-        } else if (colName.includes('description') || colName.includes('text') || colName.includes('message') || colName.includes('comment')) {
-          // Text fields get more space
-          columnWidths[index] = { cellWidth: 55 };
-        } else if (colName.includes('date') || colName.includes('time') || colName.includes('created') || colName.includes('updated')) {
-          // Date fields get medium space
-          columnWidths[index] = { cellWidth: 25 };
-        } else if (colName.includes('email')) {
-          // Email fields get medium space
-          columnWidths[index] = { cellWidth: 40 };
-        } else if (colName.includes('status') || colName.includes('priority') || colName.includes('type')) {
-          // Status fields are usually short
-          columnWidths[index] = { cellWidth: 20 };
-        }
-      });
-
-      // Generate the table with autoTable
-      autoTable(doc, {
-        startY: yPosition + 2,
-        head: [headers],
-        body: data,
-        theme: 'grid',
-        styles: {
-          fontSize: 9,
-          overflow: 'linebreak',
-          cellWidth: 'auto',
-          cellPadding: 3,
-          // halign: props.rtl ? 'right' : 'left',
-          valign: 'middle',
-          font: 'NotoSans',
-        },
-        columnStyles: columnWidths,
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-          font: 'NotoSans',
-        },
-        didParseCell: function(data) {
-          // Set appropriate font and direction for Arabic text
-          if (hasArabic(data.cell.text)) {
-            data.cell.styles.font = 'Amiri';
-            // data.cell.styles.halign = 'right';
-          }
-        },
-        margin: { left: 15, right: 15 },
-        didDrawPage: (data) => {
-          // Add header to each page
-          doc.setFontSize(8);
-          doc.setFont('NotoSans');
-
-          if (hasArabic(props.title)) {
-            doc.setFont('Amiri');
-            doc.text(props.title || 'Report', 15, 10, );
-          } else {
-            doc.setFont('NotoSans');
-            doc.text(props.title || 'Report', 15, 10);
-          }
-
-          // Add page number at the bottom
-          doc.setFontSize(8);
-          doc.setFont('NotoSans');
-          doc.text(
-            `Page ${doc.internal.getNumberOfPages()}`,
-            doc.internal.pageSize.width / 2,
-            doc.internal.pageSize.height - 10,
-            { align: 'center' }
-          );
-        }
-      });
-
-      // Add notes if available
-      if (props.notes) {
-        const finalY = doc.lastAutoTable.finalY + 10;
-        doc.setFontSize(10);
+]
 
-        if (hasArabic('Notes')) {
-          doc.setFont('Amiri');
-          doc.text('Notes:', 15, finalY);
-        } else {
-          doc.setFont('NotoSans');
-          doc.text('Notes:', 15, finalY);
-        }
 
-        doc.setFontSize(9);
 
-        if (hasArabic(props.notes)) {
-          doc.setFont('Amiri');
-          const splitNotes = doc.splitTextToSize(
-            props.notes,
-            doc.internal.pageSize.width - 30
-          );
-          doc.text(splitNotes, 15, finalY + 5 );
-        } else {
-          doc.setFont('NotoSans');
-          const splitNotes = doc.splitTextToSize(
-            props.notes,
-            doc.internal.pageSize.width - 30
-          );
-          doc.text(splitNotes, 15, finalY + 5);
-        }
-      }
-    }
 
-    doc.save(props.pdfFilename || `${props.title || 'report'}-${Date.now()}.pdf`);
 
-    exporting.value = false;
-    $q.notify({
-      color: 'positive',
-      message: 'PDF exported successfully',
-      icon: 'check_circle'
-    });
-  } catch (error) {
-    console.error('PDF export error:', error);
-    exporting.value = false;
-    $q.notify({
-      color: 'negative',
-      message: 'Failed to export PDF: ' + error.message,
-      icon: 'error'
-    });
-  }
-}
-</script>
 
 
 
@@ -804,39 +592,7 @@ const exportAsPDF = async () => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+playground page??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
 
 
@@ -852,1064 +608,545 @@ const exportAsPDF = async () => {
 
 
 <template>
-  <div>
-    <!-- Export Button -->
-    <q-btn
-      :color="buttonColor || 'primary'"
-      :icon="buttonIcon || 'picture_as_pdf'"
-      :label="buttonLabel || 'Export PDF'"
-      :flat="buttonFlat"
-      :outline="buttonOutline"
-      :round="buttonRound"
-      :size="buttonSize || 'md'"
-      @click="openPrintDialog"
-    />
+  <q-page padding>
+    <div class="text-h4 text-center q-mb-lg">PDF Report Builder</div>
+    <div class="text-subtitle1 text-center q-mb-xl">Configure your report settings and see real-time updates</div>
 
-    <!-- Preview Dialog -->
-    <q-dialog v-model="printDialog" persistent>
-      <q-card class="print-dialog" style="width: 85vw; max-width: 1000px; max-height: 90vh;">
-        <q-bar class="bg-primary text-white">
-          <div class="text-h6">{{ title || 'PDF Preview' }}</div>
-          <q-space />
-          <q-btn dense flat icon="close" @click="printDialog = false">
-            <q-tooltip>Close</q-tooltip>
-          </q-btn>
-        </q-bar>
+    <div class="row q-col-gutter-md">
+      <!-- Settings Panel -->
+      <div class="col-12 col-md-5">
+        <q-card class="settings-card">
+          <q-tabs
+            v-model="activeTab"
+            dense
+            class="text-grey"
+            active-color="primary"
+            indicator-color="primary"
+            align="justify"
+          >
+            <q-tab name="content" label="Content" icon="text_fields" />
+            <q-tab name="button" label="Button" icon="smart_button" />
+            <q-tab name="summary" label="Summary" icon="summarize" />
+            <q-tab name="advanced" label="Advanced" icon="settings" />
+          </q-tabs>
 
-        <q-card-section class="scroll" style="max-height: calc(90vh - 120px)">
-          <div id="print-content" class="print-content q-pa-md">
-            <!-- Header section -->
-            <div class="print-header q-mb-lg">
-              <div class="text-h5 text-center">{{ title || 'Report' }}</div>
-              <div v-if="subtitle" class="text-subtitle1 text-center text-grey-7">
-                {{ subtitle }}
+          <q-separator />
+
+          <q-tab-panels v-model="activeTab" animated>
+            <!-- Content Tab -->
+            <q-tab-panel name="content">
+              <div class="text-h6 q-mb-md">Content Settings</div>
+
+              <q-input
+                v-model="reportConfig.title"
+                label="Report Title"
+                filled
+                class="q-mb-md"
+              />
+
+              <q-input
+                v-model="reportConfig.subtitle"
+                label="Subtitle"
+                filled
+                class="q-mb-md"
+              />
+
+              <q-input
+                v-model="reportConfig.tableTitle"
+                label="Table Title"
+                filled
+                class="q-mb-md"
+              />
+
+              <q-input
+                v-model="reportConfig.notesTitle"
+                label="Notes Title"
+                filled
+                class="q-mb-md"
+              />
+
+              <q-input
+                v-model="reportConfig.notes_data"
+                label="Notes Content"
+                type="textarea"
+                filled
+                autogrow
+              />
+            </q-tab-panel>
+
+            <!-- Button Tab -->
+            <q-tab-panel name="button">
+              <div class="text-h6 q-mb-md">Button Settings</div>
+
+              <q-input
+                v-model="reportConfig.buttonLabel"
+                label="Button Label"
+                filled
+                class="q-mb-md"
+              />
+
+              <q-select
+                v-model="reportConfig.buttonColor"
+                :options="colorOptions"
+                label="Button Color"
+                filled
+                emit-value
+                map-options
+                class="q-mb-md"
+              >
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar>
+                      <q-badge :color="scope.opt.value" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+
+              <q-select
+                v-model="reportConfig.buttonIcon"
+                :options="iconOptions"
+                label="Button Icon"
+                filled
+                emit-value
+                map-options
+                class="q-mb-md"
+              >
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar>
+                      <q-icon :name="scope.opt.value" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+
+              <q-select
+                v-model="reportConfig.buttonSize"
+                :options="sizeOptions"
+                label="Button Size"
+                filled
+                class="q-mb-md"
+              />
+
+              <div class="row q-col-gutter-md q-mb-md">
+                <div class="col-4">
+                  <q-toggle
+                    v-model="reportConfig.buttonFlat"
+                    label="Flat"
+                    left-label
+                  />
+                </div>
+                <div class="col-4">
+                  <q-toggle
+                    v-model="reportConfig.buttonOutline"
+                    label="Outline"
+                    left-label
+                  />
+                </div>
+
               </div>
-              <div class="text-caption text-right q-mt-sm">
-                Generated on: {{ formatDate(new Date(), true) }}
-              </div>
+            </q-tab-panel>
+
+            <!-- Summary Tab -->
+            <q-tab-panel name="summary">
+              <div class="text-h6 q-mb-md">Summary Data</div>
+
+              <q-input
+                v-model="reportConfig.summaryTitle"
+                label="Summary Title"
+                filled
+                class="q-mb-md"
+              />
+
+              <q-list bordered separator class="rounded-borders q-mb-md">
+                <q-item v-for="(key, index) in summaryKeys" :key="index">
+                  <q-item-section>
+                    <q-input
+                      v-model="summaryKeys[index]"
+                      dense
+                      filled
+                      label="Label"
+                      class="q-mr-sm"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-input
+                      v-model="summaryValues[index]"
+                      dense
+                      filled
+                      label="Value"
+                    />
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-btn
+                      round
+                      flat
+                      dense
+                      color="negative"
+                      icon="delete"
+                      @click="removeSummaryItem(index)"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+
+              <q-btn
+                color="positive"
+                label="Add Item"
+                icon="add"
+                @click="addSummaryItem"
+              />
+            </q-tab-panel>
+
+            <!-- Advanced Tab -->
+            <q-tab-panel name="advanced">
+              <div class="text-h6 q-mb-md">Advanced Settings</div>
+
+              <q-toggle
+                v-model="reportConfig.rtl"
+                label="RTL Mode (Right-to-left)"
+                class="q-mb-md"
+              />
+
+              <q-input
+                v-model="reportConfig.pdfFilename"
+                label="PDF Filename"
+                filled
+                class="q-mb-md"
+              />
+            </q-tab-panel>
+          </q-tab-panels>
+        </q-card>
+      </div>
+
+      <!-- Preview Panel -->
+      <div class="col-12 col-md-7">
+        <q-card class="q-mb-md">
+          <q-card-section>
+            <div class="text-h6">Preview</div>
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-section>
+            <!-- Button Preview -->
+            <div class="q-mb-lg">
+              <div class="text-subtitle2 q-mb-sm">Button Preview:</div>
+              <q-btn
+                :color="reportConfig.buttonColor || 'primary'"
+                :icon="reportConfig.buttonIcon || 'picture_as_pdf'"
+                :label="reportConfig.buttonLabel || 'Export PDF'"
+                :flat="reportConfig.buttonFlat"
+                :outline="reportConfig.buttonOutline"
+                :size="reportConfig.buttonSize || 'md'"
+              />
             </div>
 
-            <!-- Summary section -->
-            <div v-if="summaryData && Object.keys(summaryData).length" class="summary-section q-mb-md">
-              <div class="text-subtitle1 q-mb-xs">{{ summaryTitle || 'Summary' }}</div>
-              <q-card flat bordered>
-                <q-card-section class="q-pa-sm">
-                  <div class="row q-col-gutter-sm">
-                    <div
-                      v-for="(value, key) in summaryData"
-                      :key="key"
-                      class="col-12 col-sm-4 col-md-3"
-                    >
-                      <div class="text-caption text-grey">{{ formatLabel(key) }}</div>
-                      <div class="text-body2">{{ value }}</div>
+            <!-- Report Content Preview -->
+            <div class="text-subtitle2 q-mb-sm">Report Content Preview:</div>
+            <q-card flat bordered :dir="reportConfig.rtl ? 'rtl' : 'ltr'">
+              <!-- Report Header -->
+              <q-card-section class="q-pb-none">
+                <div class="text-h6 text-center">{{ reportConfig.title || 'Report Title' }}</div>
+                <div v-if="reportConfig.subtitle" class="text-subtitle1 text-center text-grey-7">
+                  {{ reportConfig.subtitle }}
+                </div>
+                <div class="text-caption text-right q-mt-sm">
+                  Generated on: {{ formattedDate }}
+                </div>
+              </q-card-section>
+
+              <!-- Summary Section -->
+              <q-card-section v-if="Object.keys(reportConfig.summaryData || {}).length" class="q-pt-sm">
+                <div class="text-subtitle1">{{ reportConfig.summaryTitle || 'Summary' }}</div>
+                <q-card flat bordered>
+                  <q-card-section class="q-pa-sm">
+                    <div class="row q-col-gutter-sm">
+                      <div v-for="(value, key) in reportConfig.summaryData" :key="key" class="col-6 col-md-3">
+                        <div class="text-caption text-grey">{{ key }}</div>
+                        <div class="text-body2">{{ value }}</div>
+                      </div>
                     </div>
-                  </div>
-                </q-card-section>
-              </q-card>
-            </div>
+                  </q-card-section>
+                </q-card>
+              </q-card-section>
 
-            <!-- Table Data Section -->
-            <div v-if="tableData && tableData.length" class="table-section">
-              <div class="text-subtitle1 q-mb-xs">{{ tableTitle || 'Data' }}</div>
-              <!-- Scrollable table container -->
-              <div class="print-table-container q-pa-none">
-                <table class="print-table">
-                  <thead>
-                    <tr>
-                      <th
-                        v-for="col in effectiveColumns"
-                        :key="col.name"
-                        :style="col.style || ''"
-                      >
-                        {{ col.label }}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(row, rowIndex) in tableData" :key="getRowKey(row, rowIndex)">
-                      <td
-                        v-for="col in effectiveColumns"
-                        :key="col.name"
-                        :style="col.style || ''"
-                      >
-                        <div v-if="formatters && formatters[col.name]">
-                          <!-- Format with custom formatter -->
-                          <div v-if="formatters[col.name].wrapText"
-                               :class="{'wrap-text': formatters[col.name].wrapText}"
-                               :style="formatters[col.name].maxLines ?
-                                      `max-height: ${formatters[col.name].maxLines * 1.5}em;
-                                       overflow: hidden; text-overflow: ellipsis;` : ''">
-                            {{ formatters[col.name].formatter(row[col.name], row) }}
-                          </div>
-                          <component
-                            v-else
-                            :is="formatters[col.name].component || 'div'"
-                            v-bind="getFormatterProps(formatters[col.name].props, row[col.name], row)"
-                          >
-                            {{ formatters[col.name].formatter(row[col.name], row) }}
-                          </component>
-                        </div>
-                        <div v-else-if="col.format">
-                          {{ col.format(row[col.name], row) }}
-                        </div>
-                        <div v-else>
-                          {{ row[col.name] }}
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              <!-- Table Preview -->
+              <q-card-section class="q-pt-sm">
+                <div class="text-subtitle1">{{ reportConfig.tableTitle || 'Data' }}</div>
+                <q-table
+                  :rows="reportConfig.tableData"
+                  :columns="generatedColumns"
+                  row-key="id"
+                  dense
+                  flat
+                  bordered
+                />
+              </q-card-section>
 
-            <!-- Additional Content -->
-            <slot name="additional-content"></slot>
+              <!-- Notes Preview -->
+              <q-card-section v-if="reportConfig.notes_data" class="q-pt-sm">
+                <div class="text-subtitle1">{{ reportConfig.notesTitle || 'Notes' }}</div>
+                <p class="text-body2">{{ reportConfig.notes_data }}</p>
+              </q-card-section>
+            </q-card>
+          </q-card-section>
+        </q-card>
 
-            <div v-if="notes_data" class="notes-section q-mt-md">
-              <div class="text-caption">{{ notesTitle }}</div>
-              <div class="text-caption text-grey-8">{{ notes_data }}</div>
-            </div>
-          </div>
-        </q-card-section>
+        <q-card>
+          <q-card-section class="row items-center">
+            <div class="text-h6">Generated Code</div>
+            <q-space />
+            <q-btn
+              flat
+              round
+              dense
+              icon="content_copy"
+              @click="copyToClipboard"
+            >
+              <q-tooltip>Copy code</q-tooltip>
+            </q-btn>
+          </q-card-section>
 
-        <q-separator />
+          <q-separator />
 
-        <q-card-actions align="right" class="bg-white q-py-sm print-actions">
-          <q-btn
-            outline
-            color="grey-7"
-            icon="cancel"
-            label="Cancel"
-            dense
-            @click="printDialog = false"
-            class="q-mr-sm"
-          />
-          <q-btn
-            unelevated
-            color="primary"
-            icon="picture_as_pdf"
-            label="Export as PDF"
-            dense
-            @click="exportAsPDF"
-            :loading="exporting"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-  </div>
+          <q-card-section class="code-preview">
+            <pre><code>{{ generatedCode }}</code></pre>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+  </q-page>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useQuasar } from 'quasar'
+import { ref, reactive, computed, watch } from 'vue';
+import { useQuasar } from 'quasar';
+import PDFExport from '../components/PrintReport.vue'; // Adjust path as needed
 
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+const $q = useQuasar();
+const activeTab = ref('content');
 
-import amiriRegular from '../fonts/Amiri-Regular.ttf'
+// Summary data arrays
+const summaryKeys = ref(["Total Sales", "Units Sold", "Top Product", "Growth"]);
+const summaryValues = ref(["$45,250", "1,234", "Widget X", "+12.5%"]);
 
-const $q = useQuasar()
-
-// Props for component configuration
-const props = defineProps({
-  // Content props
-  title: String,
-  subtitle: String,
-  tableTitle: String,
-  tableData: Array,
-  columns: Array,
-  summaryData: Object,
-  summaryTitle: String,  // Added summaryTitle prop
-  notesTitle: String,
-  notes_data: String,
-
-  // Button appearance
-  buttonColor: String,
-  buttonIcon: String,
-  buttonLabel: String,
-  buttonFlat: Boolean,
-  buttonOutline: Boolean,
-  buttonRound: Boolean,
-  buttonSize: String,
-
-  // Custom formatters for table data
-  formatters: Object,
-
-  // PDF options
-  pdfFilename: String,
-  pdfOptions: Object,
-
-  // Exclusion settings
-  excludeFields: {
-    type: Array,
-    default: () => ['actions', '_id', '__v']
+// Report config object
+const reportConfig = reactive({
+  title: "Monthly Sales Report",
+  subtitle: "January 2023",
+  tableTitle: "Sales Data",
+  summaryTitle: "Sales Summary",
+  notesTitle: "Notes",
+  notes_data: "This report shows the monthly sales performance across all product categories.",
+  buttonLabel: "Export PDF",
+  buttonColor: "primary",
+  buttonIcon: "picture_as_pdf",
+  buttonSize: "md",
+  buttonFlat: false,
+  buttonOutline: false,
+  rtl: false,
+  pdfFilename: "sales_report.pdf",
+  summaryData: {
+    "Total Sales": "$45,250",
+    "Units Sold": "1,234",
+    "Top Product": "Widget X",
+    "Growth": "+12.5%"
   },
+  tableData: [
+    { id: 1, product: "Widget A", category: "Electronics", quantity: 150, revenue: 3000 },
+    { id: 2, product: "Widget B", category: "Home Goods", quantity: 75, revenue: 1500 },
+    { id: 3, product: "Widget C", category: "Electronics", quantity: 220, revenue: 4400 },
+    { id: 4, product: "Widget D", category: "Office", quantity: 40, revenue: 1200 },
+    { id: 5, product: "Widget E", category: "Home Goods", quantity: 180, revenue: 5400 }
+  ]
+});
 
-  // Row key field (for unique identification)
-  rowKey: {
-    type: String,
-    default: 'id'
-  },
+// Options for selects
+const colorOptions = [
+  { label: 'Primary', value: 'primary' },
+  { label: 'Secondary', value: 'secondary' },
+  { label: 'Accent', value: 'accent' },
+  { label: 'Positive', value: 'positive' },
+  { label: 'Negative', value: 'negative' },
+  { label: 'Info', value: 'info' },
+  { label: 'Warning', value: 'warning' },
+  { label: 'Dark', value: 'dark' }
+];
 
-  // Language options
-  rtl: {
-    type: Boolean,
-    default: false
-  }
-})
+const iconOptions = [
+  { label: 'PDF', value: 'picture_as_pdf' },
+  { label: 'Download', value: 'download' },
+  { label: 'File Download', value: 'file_download' },
+  { label: 'Print', value: 'print' },
+  { label: 'Save', value: 'save' },
+  { label: 'Export', value: 'upload' }
+];
 
-// State
-const printDialog = ref(false)
-const exporting = ref(false)
+const sizeOptions = ['xs', 'sm', 'md', 'lg', 'xl'];
 
-// Helper method to get a unique key for each row
-const getRowKey = (row, fallbackIndex) => {
-  // Try to use the specified rowKey field
-  if (props.rowKey && row[props.rowKey] !== undefined) {
-    return row[props.rowKey]
-  }
+// Format date for preview
+const formattedDate = computed(() => {
+  return new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true
+  });
+});
 
-  // If that fails, try common ID fields
-  for (const key of ['id', '_id', 'key', 'uid']) {
-    if (row[key] !== undefined) return row[key]
-  }
-
-  // Last resort: use the array index
-  return fallbackIndex
-}
-
-// Dynamically generate columns based on the actual data
-const effectiveColumns = computed(() => {
-  // If columns are explicitly provided, use them
-  if (props.columns && props.columns.length > 0) {
-    return props.columns
-  }
-
-  // Otherwise, dynamically generate columns from the data
-  if (props.tableData && props.tableData.length > 0) {
-    // Gather all unique keys from all data items
-    const allFields = new Set()
-
-    props.tableData.forEach(item => {
-      Object.keys(item).forEach(key => {
-        if (!props.excludeFields.includes(key)) {
-          allFields.add(key)
-        }
-      })
-    })
-
-    // Convert to array and sort alphabetically (no assumptions about field order)
-    const sortedFields = [...allFields].sort((a, b) => a.localeCompare(b))
-
-    // Generate columns with equal widths by default
-    const columnWidth = `${Math.floor(100 / Math.min(sortedFields.length, 10))}%`
-
-    return sortedFields.map(field => {
-      return {
-        name: field,
-        label: formatLabel(field),
-        field: field,
-        align: props.rtl ? 'right' : 'left',
-        style: `width: ${columnWidth}`
-      }
-    })
+// Generate columns for the table preview
+const generatedColumns = computed(() => {
+  if (!reportConfig.tableData || !reportConfig.tableData.length) {
+    return [];
   }
 
-  return []
-})
+  // Get all unique keys from the first row
+  const keys = Object.keys(reportConfig.tableData[0]);
 
-// Methods
-const openPrintDialog = () => {
-  printDialog.value = true
-}
+  // Create column definitions for each key
+  return keys.map(key => {
+    return {
+      name: key,
+      label: formatLabel(key),
+      field: key,
+      align: reportConfig.rtl ? 'right' : 'left'
+    };
+  });
+});
 
-const formatLabel = (key) => {
+// Generate code for component
+const generatedCode = computed(() => {
+  // Create a simplified version of the config for display
+  const config = { ...reportConfig };
+
+  // Remove the tableData for brevity
+  delete config.tableData;
+
+  // Build the component code
+  let code = '<pdf-export-component\n';
+
+  // Add string props
+  if (config.title) code += `  title="${config.title}"\n`;
+  if (config.subtitle) code += `  subtitle="${config.subtitle}"\n`;
+  if (config.tableTitle) code += `  tableTitle="${config.tableTitle}"\n`;
+  if (config.summaryTitle) code += `  summaryTitle="${config.summaryTitle}"\n`;
+  if (config.notesTitle) code += `  notesTitle="${config.notesTitle}"\n`;
+  if (config.notes_data) code += `  notes_data="${config.notes_data}"\n`;
+  if (config.buttonLabel) code += `  buttonLabel="${config.buttonLabel}"\n`;
+  if (config.buttonColor !== 'primary') code += `  buttonColor="${config.buttonColor}"\n`;
+  if (config.buttonIcon !== 'picture_as_pdf') code += `  buttonIcon="${config.buttonIcon}"\n`;
+  if (config.buttonSize !== 'md') code += `  buttonSize="${config.buttonSize}"\n`;
+  if (config.pdfFilename) code += `  pdfFilename="${config.pdfFilename}"\n`;
+
+  // Add boolean props
+  if (config.buttonFlat) code += '  buttonFlat\n';
+  if (config.buttonOutline) code += '  buttonOutline\n';
+  if (config.rtl) code += '  :rtl="true"\n';
+
+  // Add object props
+  code += '  :tableData="yourData"\n';
+
+  if (config.summaryData && Object.keys(config.summaryData).length > 0) {
+    code += `  :summaryData="${JSON.stringify(config.summaryData)}"\n`;
+  }
+
+  code += '/>';
+
+  return code;
+});
+
+// Format column labels
+function formatLabel(key) {
+  // Convert camelCase or snake_case to Title Case
   return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/_/g, ' ')
-    .replace(/^\w/, c => c.toUpperCase())
-    .trim()
+    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+    .replace(/_/g, ' ')        // Replace underscores with spaces
+    .replace(/^\w/, c => c.toUpperCase()) // Capitalize first letter
+    .trim();                  // Remove extra spaces
 }
 
-const getFormatterProps = (propsConfig, value, row) => {
-  if (typeof propsConfig === 'function') {
-    return propsConfig(value, row)
-  } else if (typeof propsConfig === 'object') {
-    const result = {}
-
-    Object.keys(propsConfig).forEach(key => {
-      if (typeof propsConfig[key] === 'function') {
-        result[key] = propsConfig[key](value, row)
-      } else {
-        result[key] = propsConfig[key]
-      }
-    })
-
-    return result
-  }
-
-  return propsConfig || {}
+// Add a new summary item
+function addSummaryItem() {
+  summaryKeys.value.push("");
+  summaryValues.value.push("");
+  updateSummaryData();
 }
 
-const formatDate = (date, includeTime = false) => {
-  if (!date) return '-'
-  const d = new Date(date)
-
-  if (includeTime) {
-    return d.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    })
-  } else {
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
+// Remove a summary item
+function removeSummaryItem(index) {
+  summaryKeys.value.splice(index, 1);
+  summaryValues.value.splice(index, 1);
+  updateSummaryData();
 }
 
-const hasArabic = (text) => {
-  if (!text || typeof text !== 'string') return false;
-  const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-  return arabicPattern.test(text);
-}
-
-// Convert fonts to base64 string
-const getBase64Font = async (fontPath) => {
-  try {
-    const response = await fetch(fontPath);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(',')[1]);
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error('Failed to load font:', error);
-    return null;
-  }
-}
-
-const exportAsPDF = async () => {
-  exporting.value = true
-
-  try {
-    // Load the font data
-    const arabicFontData = await getBase64Font(amiriRegular);
-
-    const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4'
-    })
-
-    doc.addFileToVFS('Amiri-Regular.ttf', arabicFontData);
-    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-
-    // Set Amiri as the default font
-    doc.setFont('Amiri');
-    doc.setFontSize(21);
-
-    // Title
-    doc.text(props.title || 'Report', doc.internal.pageSize.width / 2, 15, {
-      align: 'center'
-    });
-
-    if (props.subtitle) {
-      doc.setFontSize(15);
-      doc.text(props.subtitle, doc.internal.pageSize.width / 2, 24, {
-        align: 'center'
-      });
+// Update the summaryData object
+function updateSummaryData() {
+  const summaryData = {};
+  summaryKeys.value.forEach((key, index) => {
+    if (key.trim()) {
+      summaryData[key] = summaryValues.value[index];
     }
+  });
+  reportConfig.summaryData = summaryData;
+}
 
-    doc.setFontSize(10);
-    const dateText = `Generated on: ${formatDate(new Date(), true)}`;
-    doc.text(dateText, doc.internal.pageSize.width - 15, 30, { align: 'right' });
-
-    let yPosition = 35;
-
-    if (props.summaryData && Object.keys(props.summaryData).length) {
-      doc.setFontSize(12);
-      // Use the provided summaryTitle instead of hardcoded 'Summary'
-      doc.text(props.summaryTitle || 'Summary', 15, yPosition);
-
-      yPosition += 5;
-
-      const summaryRows = [];
-      const keys = Object.keys(props.summaryData);
-
-      for (let i = 0; i < keys.length; i += 2) {
-        const row = [];
-        row.push(formatLabel(keys[i]));
-        row.push(props.summaryData[keys[i]]);
-
-        if (i + 1 < keys.length) {
-          row.push(formatLabel(keys[i + 1]));
-          row.push(props.summaryData[keys[i + 1]]);
-        } else {
-          row.push('');
-          row.push('');
-        }
-
-        summaryRows.push(row);
-      }
-
-      autoTable(doc, {
-        startY: yPosition + 2,
-        head: [['Field', 'Value', 'Field', 'Value']],
-        body: summaryRows,
-        theme: 'grid',
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-          font: 'Amiri',
-        },
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-          font: 'Amiri',
-        },
-        margin: { left: 15, right: 15 }
-      });
-
-      yPosition = doc.lastAutoTable.finalY + 10;
-    }
-
-    if (props.tableData && props.tableData.length) {
-      doc.setFontSize(20);
-      doc.text(props.tableTitle || 'Data', 15, yPosition);
-
-      yPosition += 5;
-
-      const headers = effectiveColumns.value.map(col => col.label);
-
-      const data = props.tableData.map(row => {
-        return effectiveColumns.value.map(col => {
-          let value = row[col.name];
-
-          if (props.formatters && props.formatters[col.name]) {
-            value = props.formatters[col.name].formatter(value, row);
-          } else if (col.format) {
-            value = col.format(value, row);
-          }
-
-          return value !== undefined && value !== null ? String(value) : '';
-        });
-      });
-
-      const columnWidths = {};
-      effectiveColumns.value.forEach((col, index) => {
-        const colName = col.name.toLowerCase();
-
-        if (colName.includes('id') && colName.length < 5) {
-          columnWidths[index] = { cellWidth: 15 };
-        } else if (colName.includes('description') || colName.includes('text') || colName.includes('message') || colName.includes('comment')) {
-          // Text fields get more space
-          columnWidths[index] = { cellWidth: 55 };
-        } else if (colName.includes('date') || colName.includes('time') || colName.includes('created') || colName.includes('updated')) {
-          // Date fields get medium space
-          columnWidths[index] = { cellWidth: 25 };
-        } else if (colName.includes('email')) {
-          // Email fields get medium space
-          columnWidths[index] = { cellWidth: 40 };
-        } else if (colName.includes('status') || colName.includes('priority') || colName.includes('type')) {
-          // Status fields are usually short
-          columnWidths[index] = { cellWidth: 20 };
-        }
-      });
-
-      // Generate the table with autoTable
-      autoTable(doc, {
-        startY: yPosition + 2,
-        head: [headers],
-        body: data,
-        theme: 'grid',
-        styles: {
-          fontSize: 9,
-          overflow: 'linebreak',
-          cellWidth: 'auto',
-          cellPadding: 3,
-          valign: 'middle',
-          font: 'Amiri',
-        },
-        columnStyles: columnWidths,
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-          font: 'Amiri',
-        },
-        willDrawCell: function(data) {
-          // Ensure all cells use Amiri font
-          data.cell.styles.font = 'Amiri';
-        },
-        margin: { left: 15, right: 15 },
-        didDrawPage: (data) => {
-          // Add header to each page
-          doc.setFontSize(12);
-          doc.text(props.title || 'Report', 15, 10);
-
-          // Add page number at the bottom
-          doc.setFontSize(8);
-          doc.text(
-            `Page ${doc.internal.getNumberOfPages()}`,
-            doc.internal.pageSize.width / 2,
-            doc.internal.pageSize.height - 10,
-            { align: 'center' }
-          );
-        }
-      });
-
-      // Add notes if available
-      if (props.notes_data) {
-        const finalY = doc.lastAutoTable.finalY + 10;
-        doc.setFontSize(17);
-
-        // Use the provided notesTitle
-        doc.text(props.notesTitle || 'Notes:', 15, finalY);
-
-        doc.setFontSize(10);
-
-        if (hasArabic(props.notes_data)) {
-          const splitNotes = doc.splitTextToSize(
-            props.notes_data,
-            doc.internal.pageSize.width - 30
-          );
-
-          // For Arabic notes, align to the right side of the page
-          doc.text(splitNotes, doc.internal.pageSize.width - 15, finalY + 5, {
-            align: 'right'
-          });
-        } else {
-          const splitNotes = doc.splitTextToSize(
-            props.notes_data,
-            doc.internal.pageSize.width - 30
-          );
-          doc.text(splitNotes, 15, finalY + 5);
-        }
-      }
-    }
-
-    doc.save(props.pdfFilename || `${props.title || 'report'}-${Date.now()}.pdf`);
-
-    exporting.value = false;
+// Copy the generated code to clipboard
+function copyToClipboard() {
+  navigator.clipboard.writeText(generatedCode.value).then(() => {
     $q.notify({
+      message: 'Code copied to clipboard',
       color: 'positive',
-      message: 'PDF exported successfully',
-      icon: 'check_circle'
+      icon: 'content_copy',
+      position: 'top'
     });
-  } catch (error) {
-    console.error('PDF export error:', error);
-    exporting.value = false;
+  }).catch(err => {
     $q.notify({
+      message: 'Failed to copy code',
       color: 'negative',
-      message: 'Failed to export PDF: ' + error.message,
-      icon: 'error'
+      icon: 'error',
+      position: 'top'
     });
-  }
+    console.error('Failed to copy: ', err);
+  });
 }
+
+// Watch for changes to summary data
+watch(summaryKeys, () => {
+  updateSummaryData();
+}, { deep: true });
+
+watch(summaryValues, () => {
+  updateSummaryData();
+}, { deep: true });
 </script>
 
-<style scoped>
-.print-dialog {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+<style lang="scss" scoped>
+.settings-card {
+  height: 100%;
 }
 
-.print-content {
-  background: white;
-}
-
-.print-table-container {
+.code-preview {
+  background: #f5f5f5;
+  border-radius: 4px;
   overflow-x: auto;
-  margin-bottom: 1rem;
-}
 
-.print-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-}
+  pre {
+    margin: 0;
+    font-family: 'Courier New', Courier, monospace;
 
-.print-table th,
-.print-table td {
-  padding: 8px;
-  border: 1px solid #ddd;
-  text-align: left;
-}
-
-.print-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-.wrap-text {
-  white-space: normal;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* RTL support for tables */
-:deep(.q-table--grid) {
-  direction: rtl;
-}
-
-/* Print styles - not visible in preview but will apply when printing */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .print-content,
-  .print-content * {
-    visibility: visible;
-  }
-  .print-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-  .print-actions {
-    display: none;
+    code {
+      white-space: pre-wrap;
+    }
   }
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const exportAsPDF = async () => {
-  exporting.value = true
-
-  try {
-    // Load the font data
-    const arabicFontData = await getBase64Font(amiriRegular);
-
-    const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    doc.addFileToVFS('Amiri-Regular.ttf', arabicFontData);
-    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'bold');  // Add bold version too
-
-    // Set Amiri as the default font for the entire document
-    doc.setFont('Amiri');
-
-    // Global page margins
-    const margin = {
-      left: 15,
-      right: 15,
-      top: 15,
-      bottom: 15
-    };
-
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-    const contentWidth = pageWidth - margin.left - margin.right;
-
-    // Determine if document is RTL
-    const isRTL = props.rtl === true;
-
-    // Helper function to render text with appropriate alignment based on language
-    const renderText = (text, x, y, options = {}) => {
-      // Check if the text contains Arabic characters
-      const textIsRTL = isRTL || hasArabic(text);
-
-      // Set default alignment based on text direction
-      const defaultAlign = textIsRTL ? 'right' : 'left';
-
-      // Calculate x position based on alignment
-      let xPos = x;
-      if (textIsRTL) {
-        xPos = pageWidth - margin.right;
-      } else {
-        xPos = margin.left;
-      }
-
-      // Merge default options with provided options
-      const textOptions = {
-        align: defaultAlign,
-        ...options
-      };
-
-      // If text is a string and no x position is provided, split it to ensure wrapping
-      if (typeof text === 'string' && !x) {
-        text = doc.splitTextToSize(text, contentWidth);
-      }
-
-      doc.text(text, xPos, y, textOptions);
-    };
-
-    // Add page header and footer function
-    const addPageHeaderAndFooter = () => {
-      // Header
-      doc.setFontSize(10);
-      renderText(props.title || 'Report', null, 10);
-
-      // Footer with page number
-      doc.setFontSize(8);
-      doc.text(
-        `Page ${doc.internal.getNumberOfPages()}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
-    };
-
-    // Set title on first page
-    doc.setFontSize(18);
-    doc.text(props.title || 'Report', pageWidth / 2, margin.top + 5, {
-      align: 'center'
-    });
-
-    if (props.subtitle) {
-      doc.setFontSize(14);
-      doc.text(props.subtitle, pageWidth / 2, margin.top + 15, {
-        align: 'center'
-      });
-    }
-
-    doc.setFontSize(9);
-    const dateText = `Generated on: ${formatDate(new Date(), true)}`;
-    doc.text(dateText, pageWidth - margin.right, margin.top + 25, {
-      align: 'right'
-    });
-
-    let yPosition = margin.top + 35;
-
-    // --- Summary Section ---
-    if (props.summaryData && Object.keys(props.summaryData).length > 0) {
-      // Title for summary with proper alignment
-      doc.setFontSize(12);
-      renderText(props.summaryTitle || 'Summary', null, yPosition);
-      yPosition += 7;
-
-      const summaryRows = [];
-      const keys = Object.keys(props.summaryData);
-
-      // Create rows with 2 columns of field-value pairs
-      for (let i = 0; i < keys.length; i += 2) {
-        const row = [];
-        row.push(formatLabel(keys[i]));
-        row.push(props.summaryData[keys[i]]);
-
-        if (i + 1 < keys.length) {
-          row.push(formatLabel(keys[i + 1]));
-          row.push(props.summaryData[keys[i + 1]]);
-        } else {
-          row.push('');
-          row.push('');
-        }
-
-        summaryRows.push(row);
-      }
-
-      // Draw summary table
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Field', 'Value', 'Field', 'Value']],
-        body: summaryRows,
-        theme: 'grid',
-        styles: {
-          fontSize: 10,
-          cellPadding: 4,
-          font: 'Amiri',
-          lineWidth: 0.1,
-          lineColor: [80, 80, 80],
-          halign: isRTL ? 'right' : 'left'
-        },
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-          font: 'Amiri',
-          halign: isRTL ? 'right' : 'left'
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: contentWidth * 0.2 },
-          1: { cellWidth: contentWidth * 0.3 },
-          2: { fontStyle: 'bold', cellWidth: contentWidth * 0.2 },
-          3: { cellWidth: contentWidth * 0.3 }
-        },
-        margin: margin,
-        didDrawPage: addPageHeaderAndFooter
-      });
-
-      yPosition = doc.lastAutoTable.finalY + 15;
-    }
-
-    // --- Main Data Table Section ---
-    if (props.tableData && props.tableData.length > 0) {
-      // If there's not enough space for table header + at least 3 rows, start a new page
-      const estimatedRowHeight = 10; // mm per row
-      const minTableSpace = 40 + (Math.min(3, props.tableData.length) * estimatedRowHeight);
-
-      if (yPosition + minTableSpace > pageHeight - margin.bottom) {
-        doc.addPage();
-        addPageHeaderAndFooter();
-        yPosition = margin.top + 15;
-      }
-
-      // Title for table section with proper alignment
-      doc.setFontSize(17);
-      renderText(props.tableTitle || 'Data', null, yPosition);
-      yPosition += 7;
-
-      // Pre-process headers to apply fonts properly for Arabic
-      const headerObjects = effectiveColumns.value.map(col => {
-        // Check if header contains Arabic
-        const isArabicHeader = hasArabic(col.label);
-
-        // Create a custom header object
-        return {
-          content: col.label,
-          styles: {
-            font: 'Amiri',
-            fontStyle: 'bold',
-            halign: (isArabicHeader || isRTL) ? 'right' : 'left'
-          }
-        };
-      });
-
-      // Format table data
-      const data = props.tableData.map(row => {
-        return effectiveColumns.value.map(col => {
-          let value = row[col.name];
-
-          if (props.formatters && props.formatters[col.name]) {
-            value = props.formatters[col.name].formatter(value, row);
-          } else if (col.format) {
-            value = col.format(value, row);
-          }
-
-          return value !== undefined && value !== null ? String(value) : '';
-        });
-      });
-
-      // Calculate optimal column widths based on content
-      const columnWidths = {};
-      const totalColumns = effectiveColumns.value.length;
-      const defaultColumnWidth = contentWidth / totalColumns;
-
-      effectiveColumns.value.forEach((col, index) => {
-        const colName = col.name.toLowerCase();
-
-        if (colName.includes('notes') || colName.includes('description') || colName.includes('comment')) {
-          // Give more space to text fields
-          columnWidths[index] = { cellWidth: defaultColumnWidth * 1.8 };
-        } else if (colName.includes('id') && colName.length < 5) {
-          // ID columns are usually narrow
-          columnWidths[index] = { cellWidth: defaultColumnWidth * 0.6 };
-        } else if (colName.includes('date') || colName.includes('time')) {
-          // Date fields
-          columnWidths[index] = { cellWidth: defaultColumnWidth * 1.2 };
-        } else if (colName === 'month' || colName.includes('status') || colName.includes('type')) {
-          // Medium-sized fields
-          columnWidths[index] = { cellWidth: defaultColumnWidth * 0.8 };
-        } else if (colName.includes('growth') || colName.includes('percentage')) {
-          // Percentage fields
-          columnWidths[index] = { cellWidth: defaultColumnWidth * 0.7 };
-        } else {
-          columnWidths[index] = { cellWidth: defaultColumnWidth };
-        }
-      });
-
-      // Generate the table with autoTable using custom headers
-      autoTable(doc, {
-        startY: yPosition,
-        // Use customized header objects instead of simple array
-        head: [headerObjects],
-        body: data,
-        theme: 'grid',
-        styles: {
-          fontSize: 9,
-          overflow: 'linebreak',
-          cellPadding: 3,
-          valign: 'middle',
-          font: 'Amiri',
-          lineWidth: 0.1,
-          lineColor: [80, 80, 80],
-          halign: isRTL ? 'right' : 'left'
-        },
-        columnStyles: columnWidths,
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-          font: 'Amiri',
-          halign: isRTL ? 'right' : 'left'
-        },
-        didParseCell: function(data) {
-          // IMPORTANT: Force Amiri font and apply special handling for Arabic in all cells
-          data.cell.styles.font = 'Amiri';
-
-          if (data.section === 'head') {
-            // Special handling for header cells
-            data.cell.styles.fontStyle = 'bold';
-
-            // Check if cell content contains Arabic
-            if (typeof data.cell.raw === 'string' && hasArabic(data.cell.raw)) {
-              data.cell.styles.halign = 'right';
-            } else if (isRTL) {
-              data.cell.styles.halign = 'right';
-            }
-          }
-        },
-        willDrawCell: function(data) {
-          // Additional font enforcement at draw time
-          data.cell.styles.font = 'Amiri';
-
-          // Set content alignment based on text direction
-          if (typeof data.cell.raw === 'string' && hasArabic(data.cell.raw)) {
-            data.cell.styles.halign = 'right';
-          } else if (isRTL) {
-            data.cell.styles.halign = 'right';
-          } else {
-            data.cell.styles.halign = 'left';
-          }
-        },
-        margin: margin,
-        didDrawPage: addPageHeaderAndFooter,
-        // Try to keep rows together when possible
-        rowPageBreak: 'avoid'
-      });
-
-      yPosition = doc.lastAutoTable.finalY + 15;
-    }
-
-    // --- Notes Section ---
-    if (props.notes_data && props.notes_data.trim().length > 0) {
-      // Format notes text
-      const notesText = props.notes_data;
-
-      // Calculate text lines and estimate space needed
-      const textLines = doc.splitTextToSize(notesText, contentWidth);
-      const estimatedNotesHeight = 15 + (textLines.length * 4); // Title + text
-
-      // Start a new page if not enough space
-      if (yPosition + estimatedNotesHeight > pageHeight - margin.bottom) {
-        doc.addPage();
-        addPageHeaderAndFooter();
-        yPosition = margin.top + 15;
-      }
-
-      // Add notes title with proper alignment
-      doc.setFontSize(12);
-      renderText(props.notesTitle || 'Notes:', null, yPosition);
-      yPosition += 7;
-
-      // Add notes content with proper alignment - Use renderText helper for consistency
-      doc.setFontSize(9);
-      renderText(notesText, null, yPosition);
-    }
-
-    // Save the PDF
-    doc.save(props.pdfFilename || `${props.title || 'report'}-${Date.now()}.pdf`);
-
-    exporting.value = false;
-    $q.notify({
-      color: 'positive',
-      message: 'PDF exported successfully',
-      icon: 'check_circle'
-    });
-  } catch (error) {
-    console.error('PDF export error:', error);
-    exporting.value = false;
-    $q.notify({
-      color: 'negative',
-      message: 'Failed to export PDF: ' + error.message,
-      icon: 'error'
-    });
-  }
-}

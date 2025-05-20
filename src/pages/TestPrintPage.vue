@@ -1,484 +1,394 @@
 <template>
   <div class="q-pa-md">
-    <h1 class="text-h4 q-mb-md">PDF Export Component Test</h1>
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Report Information</div>
+        <p class="text-caption q-mb-md">Enter the basic information for your report header and title.</p>
 
-    <div class="row q-col-gutter-md">
-      <div class="col-12 col-md-6">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Complete English Example</div>
-            <div class="text-subtitle2">All content in English</div>
-          </q-card-section>
-          <q-card-section>
-            <PDFExport
-              title="Tets"
-              subtitle="Q3 2023 Sales Performance"
-              tableTitle="Monthly Sales Breakdown"
-              :tableData="testData"
-              :summaryData="summaryData"
-              summaryTitle="Performance Overview"
-              notesTitle="Analysis Notes"
-              :notes_data="notesText"
-              :formatters="formatters"
-              buttonColor="primary"
-              buttonIcon="cloud_download"
-              buttonLabel="Generate Report"
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="reportTitle"
+              label="Report Title *"
+              :rules="[val => !!val || 'Title is required']"
+              outlined
+              dense
+              class="q-mb-md"
+              hint="The main title that appears at the top of the report"
             />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="reportSubtitle"
+              label="Report Subtitle"
+              outlined
+              dense
+              class="q-mb-md"
+              hint="Optional secondary title below the main title"
+            />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="tableTitle"
+              label="Table Title"
+              placeholder="Data Table"
+              outlined
+              dense
+              class="q-mb-md"
+              hint="Heading that appears directly above the data table"
+            />
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Table Data</div>
+        <p class="text-caption q-mb-md">Enter your data in JSON format. The system will automatically detect all fields across your entries.</p>
+
+        <!-- JSON Input Method -->
+        <q-input
+          v-model="jsonData"
+          type="textarea"
+          filled
+          class="scrollable-textarea q-mb-md"
+          label="Enter your data in JSON format"
+          hint='Single object or array of objects. Example: [{ "id": 1, "name": "John" }]'
+          :rules="[
+            val => !!val || 'JSON data is required',
+            val => validateJson(val) || 'Invalid JSON format'
+          ]"
+        />
+        <div class="q-mb-md">
+          <q-btn
+            color="primary"
+            label="Validate JSON"
+            @click="validateAndPreviewJson"
+            class="q-mr-sm"
+          />
+          <q-badge v-if="isJsonValid === true" color="positive" label="Valid JSON" />
+          <q-badge v-else-if="isJsonValid === false" color="negative" label="Invalid JSON" />
+        </div>
+        <div v-if="jsonValidationError" class="text-negative q-mb-md">
+          {{ jsonValidationError }}
+        </div>
+        <q-card flat bordered class="q-mt-md bg-grey-1">
+          <q-card-section class="q-py-sm">
+            <div class="text-subtitle2">JSON Format Requirements:</div>
+            <ul class="q-mb-none">
+              <li>Property names must be in double quotes: <code>"name": "value"</code></li>
+              <li>Strings must use double quotes: <code>"John"</code> not <code>'John'</code></li>
+              <li>No trailing commas: <code>[1, 2]</code> not <code>[1, 2,]</code></li>
+              <li>IDs must be unique within the dataset</li>
+              <li>Missing fields in objects will display as "undefined" in the table</li>
+            </ul>
           </q-card-section>
         </q-card>
-      </div>
+      </q-card-section>
+    </q-card>
 
-      <div class="col-12 col-md-6">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Complete Arabic Example</div>
-            <div class="text-subtitle2">All content in Arabic</div>
-          </q-card-section>
-          <q-card-section>
-            <PDFExport
-              title="تقرير المبيعات"
-              subtitle="نظرة عامة على مبيعات الربع الثالث 2023"
-              tableTitle="تفصيل المبيعات الشهرية"
-              :tableData="arabicSalesData"
-              :columns="arabicColumns"
-              :summaryData="arabicSummaryData"
-              summaryTitle="ملخص الأداء"
-              notesTitle="ملاحظات التحليل"
-              :notes_data="arabicNotes"
-              buttonColor="info"
-              buttonLabel="تصدير كملف PDF"
-              buttonIcon="description"
-              :rtl="true"
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="row items-center">
+          <div class="text-h6">Notes Section</div>
+          <q-space />
+          <q-toggle v-model="includeNotes" label="Include Notes" />
+        </div>
+
+        <p class="text-caption q-mb-md" v-if="includeNotes">Add optional notes or explanations to appear at the bottom of the report.</p>
+
+        <div v-if="includeNotes" class="row q-col-gutter-md">
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="notesTitle"
+              label="Notes Title"
+              outlined
+              dense
+              class="q-mb-md"
+              hint="The heading for your notes section"
+              :rules="[val => !!val || 'Notes title is required when notes are enabled']"
             />
-          </q-card-section>
-        </q-card>
+          </div>
+          <div class="col-12 col-md-8">
+            <q-input
+              v-model="notesData"
+              type="textarea"
+              label="Notes Content"
+              outlined
+              class="scrollable-textarea q-mb-md"
+              hint="Text content for your notes (supports multiple paragraphs)"
+              :rules="[val => !!val || 'Notes content is required when notes are enabled']"
+            />
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <!-- Export button section -->
+    <div class="row justify-end q-mt-md">
+      <div v-if="isFormValid">
+        <PDFExport
+          :title="reportTitle"
+          :subtitle="reportSubtitle"
+          :tableTitle="effectiveTableTitle"
+          :tableData="finalData"
+          :columns="finalColumns"
+          :notesTitle="includeNotes ? notesTitle : ''"
+          :notes_data="includeNotes ? notesData : ''"
+          :rtl="true"
+        />
       </div>
+      <q-btn
+        v-else
+        color="primary"
+        label="Export PDF Report"
+        icon="picture_as_pdf"
+        disabled
+        class="q-mr-sm"
+        @click="validateAll"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useQuasar } from 'quasar';
 import PDFExport from '../components/PrintReport.vue';
 
-// Sample sales data - English
-const salesData = ref([
-  { id: 1, month: 'January', revenue: 45000, growth: 5.2, product: 'Product A', units: 1200, cost: 32000, profit: 13000, status: 'Completed', notes: 'Strong start to the year' },
-  { id: 2, month: 'February', revenue: 48500, growth: 7.8, product: 'Product B', units: 1350, cost: 34500, profit: 14000, status: 'Completed', notes: 'Valentine\'s Day promotion successful' },
-  { id: 3, month: 'March', revenue: 52000, growth: 7.2, product: 'Product A', units: 1400, cost: 36000, profit: 16000, status: 'Completed', notes: 'End of quarter push' },
-  { id: 4, month: 'April', revenue: 49000, growth: -5.8, product: 'Product C', units: 1300, cost: 35000, profit: 14000, status: 'Completed', notes: 'Slight decline from March' },
-  { id: 5, month: 'May', revenue: 51500, growth: 5.1, product: 'Product B', units: 1375, cost: 36500, profit: 15000, status: 'Completed', notes: 'Mother\'s Day boost' },
-  { id: 6, month: 'June', revenue: 54000, growth: 4.9, product: 'Product A', units: 1450, cost: 38000, profit: 16000, status: 'Completed', notes: 'Strong end to Q2' },
-  { id: 7, month: 'July', revenue: 52500, growth: -2.8, product: 'Product C', units: 1400, cost: 37500, profit: 15000, status: 'Completed', notes: 'Summer slowdown' },
-  { id: 8, month: 'August', revenue: 53000, growth: 1.0, product: 'Product B', units: 1425, cost: 38000, profit: 15000, status: 'Completed', notes: 'Back to school promotion' },
-  { id: 9, month: 'September', revenue: 55000, growth: 3.8, product: 'Product A', units: 1475, cost: 39000, profit: 16000, status: 'Completed', notes: 'Fall collection launch' },
-]);
+const $q = useQuasar();
 
-// English columns
-const salesColumns = ref([
-  { name: 'month', label: 'Month', field: 'month', sortable: true },
-  { name: 'revenue', label: 'Revenue ($)', field: 'revenue', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'growth', label: 'Growth (%)', field: 'growth', sortable: true, format: val => `${val > 0 ? '+' : ''}${val}%` },
-  { name: 'product', label: 'Product', field: 'product', sortable: true },
-  { name: 'units', label: 'Units Sold', field: 'units', sortable: true, format: val => val.toLocaleString() },
-  { name: 'profit', label: 'Profit ($)', field: 'profit', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'notes', label: 'Notes', field: 'notes' }
-]);
+// Form data
+const reportTitle = ref('');
+const reportSubtitle = ref('');
+const tableTitle = ref('');
+const jsonData = ref('');
+const includeNotes = ref(false);
+const notesTitle = ref('');
+const notesData = ref('');
 
-// English summary data
-const summaryData = ref({
-  totalRevenue: '$458,500',
-  averageGrowth: '+2.9%',
-  bestMonth: 'September ($55,000)',
-  worstMonth: 'January ($45,000)',
-  totalProfit: '$134,000',
-  totalUnits: '12,375'
+// Validation states
+const isJsonValid = ref(null);
+const jsonValidationError = ref('');
+
+// Final processed data
+const finalData = ref([]);
+const finalColumns = ref([]);
+const uniqueParents = ref([]);
+
+// Computed property for effective table title (with default value)
+const effectiveTableTitle = computed(() => {
+  return tableTitle.value || 'Data Table';
 });
 
-// Custom formatters
-const formatters = ref({
-  growth: {
-    formatter: (value) => `${value > 0 ? '+' : ''}${value}%`,
-    props: (value) => ({
-      color: value > 0 ? 'positive' : 'negative',
-      bold: value > 5 || value < -5
-    }),
-    component: 'span'
-  },
-  revenue: {
-    formatter: (value) => `$${value.toLocaleString()}`
-  },
-  profit: {
-    formatter: (value) => `$${value.toLocaleString()}`
+// Computed property to check if form is valid
+const isFormValid = computed(() => {
+  const basicInfoValid = !!reportTitle.value; // Only report title is required
+  const dataValid = isJsonValid.value === true;
+  const notesValid = !includeNotes.value || (includeNotes.value && !!notesTitle.value && !!notesData.value);
+
+  return basicInfoValid && dataValid && notesValid;
+});
+
+// Basic JSON validation function
+const validateJson = (jsonString) => {
+  try {
+    if (!jsonString) return false;
+    JSON.parse(jsonString);
+    return true;
+  } catch (error) {
+    // Return false for invalid JSON
+    return false;
   }
-});
+};
 
-// English notes text
-const notesText = ref(`This report summarizes the sales performance for the first three quarters of 2023. We've seen consistent growth overall, with particularly strong performance in March, June, and September, which coincide with end-of-quarter promotional activities. Product A continues to be our strongest performer. The slight decline in July is attributed to seasonal patterns and is consistent with previous years. We recommend continuing with the quarterly promotional strategy and possibly expanding the Product A line.`);
+// Check for duplicate IDs in data
+const hasDuplicateIds = (data) => {
+  if (!Array.isArray(data) || data.length <= 1) return false;
 
-// Arabic sales data
-const arabicSalesData = ref([
-  { id: 1, month: 'يناير', revenue: 45000, growth: 5.2, product: 'المنتج أ', units: 1200, profit: 13000, notes: 'بداية قوية للعام' },
-  { id: 2, month: 'فبراير', revenue: 48500, growth: 7.8, product: 'المنتج ب', units: 1350, profit: 14000, notes: 'حملة عيد الحب ناجحة' },
-  { id: 3, month: 'مارس', revenue: 52000, growth: 7.2, product: 'المنتج أ', units: 1400, profit: 16000, notes: 'دفعة نهاية الربع' },
-  { id: 4, month: 'أبريل', revenue: 49000, growth: -5.8, product: 'المنتج ج', units: 1300, profit: 14000, notes: 'انخفاض طفيف من مارس' },
-  { id: 5, month: 'مايو', revenue: 51500, growth: 5.1, product: 'المنتج ب', units: 1375, profit: 15000, notes: 'ارتفاع عيد الأم' }
-]);
+  const ids = new Set();
 
-// Arabic columns
-const arabicColumns = ref([
-  { name: 'month', label: 'الشهر', field: 'month', sortable: true },
-  { name: 'revenue', label: 'الإيرادات ($)', field: 'revenue', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'growth', label: 'النمو (%)', field: 'growth', sortable: true, format: val => `${val > 0 ? '+' : ''}${val}%` },
-  { name: 'product', label: 'المنتج', field: 'product', sortable: true },
-  { name: 'units', label: 'الوحدات المباعة', field: 'units', sortable: true, format: val => val.toLocaleString() },
-  { name: 'profit', label: 'الربح ($)', field: 'profit', sortable: true, format: val => `$${val.toLocaleString()}` },
-  { name: 'notes', label: 'ملاحظات', field: 'notes' }
-]);
-
-
-const testData = ref(
-  [
-  {
-    "id": 1,
-    "date": "2025-05-20",
-    "customerName": "Angela Mcbride",
-    "product": "Smartphone",
-    "category": "Electronics",
-    "region": "South",
-    "salesRep": "John Doe",
-    "unitsSold": 9,
-    "unitPrice": 800,
-    "totalRevenue": 6480,
-    "discount": 10,
-    "paymentMethod": "Credit Card",
-    "deliveryStatus": "Shipped",
-    "feedbackScore": 4.3
-  },
-  {
-    "id": 2,
-    "date": "2025-05-12",
-    "customerName": "Joseph Garcia",
-    "product": "Tablet",
-    "category": "Electronics",
-    "region": "East",
-    "salesRep": "Jane Smith",
-    "unitsSold": 6,
-    "unitPrice": 600,
-    "totalRevenue": 3240,
-    "discount": 5,
-    "paymentMethod": "PayPal",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.0
-  },
-  {
-    "id": 3,
-    "date": "2025-05-15",
-    "customerName": "Michael Harris",
-    "product": "Coffee Machine",
-    "category": "Appliances",
-    "region": "West",
-    "salesRep": "John Doe",
-    "unitsSold": 3,
-    "unitPrice": 250,
-    "totalRevenue": 750,
-    "discount": 15,
-    "paymentMethod": "Bank Transfer",
-    "deliveryStatus": "Pending",
-    "feedbackScore": 3.8
-  },
-  {
-    "id": 4,
-    "date": "2025-05-17",
-    "customerName": "Emily Lee",
-    "product": "Backpack",
-    "category": "Accessories",
-    "region": "North",
-    "salesRep": "Lisa Green",
-    "unitsSold": 4,
-    "unitPrice": 80,
-    "totalRevenue": 320,
-    "discount": 0,
-    "paymentMethod": "Credit Card",
-    "deliveryStatus": "Shipped",
-    "feedbackScore": 4.7
-  },
-  {
-    "id": 5,
-    "date": "2025-05-21",
-    "customerName": "William Clark",
-    "product": "Headphones",
-    "category": "Electronics",
-    "region": "South",
-    "salesRep": "Eve White",
-    "unitsSold": 2,
-    "unitPrice": 100,
-    "totalRevenue": 200,
-    "discount": 0,
-    "paymentMethod": "Cash",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.9
-  },
-  {
-    "id": 6,
-    "date": "2025-05-09",
-    "customerName": "Samantha Young",
-    "product": "Monitor",
-    "category": "Electronics",
-    "region": "East",
-    "salesRep": "Eve White",
-    "unitsSold": 5,
-    "unitPrice": 300,
-    "totalRevenue": 1500,
-    "discount": 5,
-    "paymentMethod": "PayPal",
-    "deliveryStatus": "Cancelled",
-    "feedbackScore": 3.6
-  },
-  {
-    "id": 7,
-    "date": "2025-05-03",
-    "customerName": "Ryan Walker",
-    "product": "Printer",
-    "category": "Electronics",
-    "region": "North",
-    "salesRep": "Jane Smith",
-    "unitsSold": 1,
-    "unitPrice": 200,
-    "totalRevenue": 200,
-    "discount": 10,
-    "paymentMethod": "Credit Card",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.1
-  },
-  {
-    "id": 8,
-    "date": "2025-05-14",
-    "customerName": "Daniel King",
-    "product": "Desk Chair",
-    "category": "Furniture",
-    "region": "West",
-    "salesRep": "Lisa Green",
-    "unitsSold": 3,
-    "unitPrice": 150,
-    "totalRevenue": 450,
-    "discount": 0,
-    "paymentMethod": "Bank Transfer",
-    "deliveryStatus": "Shipped",
-    "feedbackScore": 4.0
-  },
-  {
-    "id": 9,
-    "date": "2025-05-06",
-    "customerName": "Rachel Adams",
-    "product": "Smartphone",
-    "category": "Electronics",
-    "region": "South",
-    "salesRep": "John Doe",
-    "unitsSold": 8,
-    "unitPrice": 800,
-    "totalRevenue": 6400,
-    "discount": 5,
-    "paymentMethod": "Credit Card",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.8
-  },
-  {
-    "id": 10,
-    "date": "2025-05-18",
-    "customerName": "Christopher Perez",
-    "product": "Laptop",
-    "category": "Electronics",
-    "region": "East",
-    "salesRep": "Jane Smith",
-    "unitsSold": 5,
-    "unitPrice": 1200,
-    "totalRevenue": 5400,
-    "discount": 15,
-    "paymentMethod": "PayPal",
-    "deliveryStatus": "Pending",
-    "feedbackScore": 4.4
-  },
-  {
-    "id": 11,
-    "date": "2025-05-22",
-    "customerName": "Sophia Scott",
-    "product": "Office Desk",
-    "category": "Furniture",
-    "region": "West",
-    "salesRep": "Eve White",
-    "unitsSold": 2,
-    "unitPrice": 500,
-    "totalRevenue": 1000,
-    "discount": 0,
-    "paymentMethod": "Bank Transfer",
-    "deliveryStatus": "Shipped",
-    "feedbackScore": 3.9
-  },
-  {
-    "id": 12,
-    "date": "2025-05-23",
-    "customerName": "Benjamin Mitchell",
-    "product": "Headphones",
-    "category": "Electronics",
-    "region": "South",
-    "salesRep": "John Doe",
-    "unitsSold": 3,
-    "unitPrice": 100,
-    "totalRevenue": 300,
-    "discount": 10,
-    "paymentMethod": "Credit Card",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.2
-  },
-  {
-    "id": 13,
-    "date": "2025-05-19",
-    "customerName": "Madison Carter",
-    "product": "Smartphone",
-    "category": "Electronics",
-    "region": "East",
-    "salesRep": "Eve White",
-    "unitsSold": 4,
-    "unitPrice": 800,
-    "totalRevenue": 3200,
-    "discount": 0,
-    "paymentMethod": "PayPal",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.6
-  },
-  {
-    "id": 14,
-    "date": "2025-05-10",
-    "customerName": "David Allen",
-    "product": "Tablet",
-    "category": "Electronics",
-    "region": "West",
-    "salesRep": "John Doe",
-    "unitsSold": 5,
-    "unitPrice": 600,
-    "totalRevenue": 3000,
-    "discount": 15,
-    "paymentMethod": "Bank Transfer",
-    "deliveryStatus": "Shipped",
-    "feedbackScore": 4.0
-  },
-  {
-    "id": 15,
-    "date": "2025-05-05",
-    "customerName": "Liam Wright",
-    "product": "Coffee Machine",
-    "category": "Appliances",
-    "region": "North",
-    "salesRep": "Lisa Green",
-    "unitsSold": 2,
-    "unitPrice": 250,
-    "totalRevenue": 500,
-    "discount": 0,
-    "paymentMethod": "Cash",
-    "deliveryStatus": "Shipped",
-    "feedbackScore": 4.5
-  },
-  {
-    "id": 16,
-    "date": "2025-05-13",
-    "customerName": "Ava Perez",
-    "product": "Monitor",
-    "category": "Electronics",
-    "region": "East",
-    "salesRep": "Eve White",
-    "unitsSold": 7,
-    "unitPrice": 300,
-    "totalRevenue": 2100,
-    "discount": 5,
-    "paymentMethod": "PayPal",
-    "deliveryStatus": "Shipped",
-    "feedbackScore": 4.4
-  },
-  {
-    "id": 17,
-    "date": "2025-05-08",
-    "customerName": "Isabella Martinez",
-    "product": "Printer",
-    "category": "Electronics",
-    "region": "South",
-    "salesRep": "John Doe",
-    "unitsSold": 3,
-    "unitPrice": 200,
-    "totalRevenue": 600,
-    "discount": 10,
-    "paymentMethod": "Bank Transfer",
-    "deliveryStatus": "Pending",
-    "feedbackScore": 3.9
-  },
-  {
-    "id": 18,
-    "date": "2025-05-24",
-    "customerName": "Charlotte Rodriguez",
-    "product": "Smartphone",
-    "category": "Electronics",
-    "region": "North",
-    "salesRep": "Eve White",
-    "unitsSold": 10,
-    "unitPrice": 800,
-    "totalRevenue": 8000,
-    "discount": 5,
-    "paymentMethod": "Credit Card",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.7
-  },
-  {
-    "id": 19,
-    "date": "2025-05-04",
-    "customerName": "Amelia Evans",
-    "product": "Tablet",
-    "category": "Electronics",
-    "region": "West",
-    "salesRep": "Lisa Green",
-    "unitsSold": 1,
-    "unitPrice": 600,
-    "totalRevenue": 600,
-    "discount": 15,
-    "paymentMethod": "PayPal",
-    "deliveryStatus": "Delivered",
-    "feedbackScore": 4.1
-  },
-  {
-    "id": 20,
-    "date": "2025-05-16",
-    "customerName": "Oliver Thomas",
-    "product": "Headphones",
-    "category": "Electronics",
-    "region": "East",
-    "salesRep": "John Doe",
-    "unitsSold": 2,
-    "unitPrice": 100,
-    "totalRevenue": 200,
-    "discount": 0,
-    "paymentMethod": "Bank Transfer",
-    "deliveryStatus": "Pending",
-    "feedbackScore": 4.3
+  for (const item of data) {
+    if (item.id !== undefined) {
+      if (ids.has(item.id)) {
+        return true; // Found duplicate ID
+      }
+      ids.add(item.id);
+    }
   }
 
+  return false;
+};
 
-]);
-// Arabic summary data
-const arabicSummaryData = ref({
-  totalRevenue: '$246,000',
-  averageGrowth: '+3.9%',
-  bestMonth: 'مارس ($52,000)',
-  worstMonth: 'يناير ($45,000)',
-  totalProfit: '$72,000',
-  totalUnits: '6,625'
-});
+// Validate basic JSON data (only check for duplicates)
+const validateJsonConsistency = (parsedData) => {
+  // Convert single object to array for consistent processing
+  const data = Array.isArray(parsedData) ? parsedData : [parsedData];
 
-// Arabic notes
-const arabicNotes = ref(`يلخص هذا التقرير أداء المبيعات للأرباع الثلاثة الأولى من عام 2023. شهدنا نموًا مستمرًا بشكل عام، مع أداء قوي بشكل خاص في مارس ويونيو وسبتمبر، والتي تتزامن مع أنشطة الترويج في نهاية الربع. لا يزال المنتج أ الأقوى أداءً. يُنسب الانخفاض الطفيف في يوليو إلى الأنماط الموسمية ويتفق مع السنوات السابقة. نوصي بمواصلة استراتيجية الترويج الربعية واحتمال توسيع خط المنتج أ.`);
+  // if (data.length === 0) {
+  //   return { valid: false, error: 'Data cannot be empty' };
+  // }
+
+  // Check for duplicate IDs
+  if (hasDuplicateIds(data)) {
+    return { valid: false, error: 'Data contains duplicate ID values' };
+  }
+
+  // No more strict field validation - allowing objects with different fields
+  return { valid: true };
+};
+
+// Process data and normalize fields across all objects
+const buildTableStructure = (dataArray) => {
+  // First pass: collect all possible fields across all objects
+  const allFields = new Set();
+  dataArray.forEach(item => {
+    Object.keys(item).forEach(key => {
+      allFields.add(key);
+    });
+  });
+
+  // Create headers for all discovered fields
+  const headers = Array.from(allFields).map(field => ({
+    name: field,
+    label: field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1'),
+    field: field,
+    sortable: true
+  }));
+
+  // Collect unique parent values if parent field exists
+  const parentValues = [];
+  dataArray.forEach(item => {
+    if (item.parent !== undefined && item.parent !== null && item.parent !== "") {
+      if (!parentValues.includes(item.parent)) {
+        parentValues.push(item.parent);
+      }
+    }
+  });
+
+  // Process data to ensure all objects have all fields (with "undefined" for missing fields)
+  const processedData = dataArray.map(item => {
+    const newItem = { ...item };
+
+    // Add "undefined" for any missing fields
+    allFields.forEach(field => {
+      if (!newItem.hasOwnProperty(field)) {
+        newItem[field] = "undefined";
+      } else if (newItem[field] === null || newItem[field] === "") {
+        // Also replace null or empty values with "undefined" text
+        newItem[field] = "undefined";
+      }
+    });
+
+    return newItem;
+  });
+
+  return { headers, processedData, parentValues };
+};
+
+// Validate and process JSON data
+const validateAndPreviewJson = () => {
+  try {
+    let jsonToValidate = jsonData.value;
+
+    try {
+      // Try to parse the JSON
+      JSON.parse(jsonToValidate);
+    } catch (e) {
+      // If parsing fails, show the error
+      isJsonValid.value = false;
+      jsonValidationError.value = 'Invalid JSON format. Please check for proper syntax including quotes and commas.';
+      return;
+    }
+
+    const parsed = JSON.parse(jsonToValidate);
+    const dataArray = Array.isArray(parsed) ? parsed : [parsed];
+    const consistencyCheck = validateJsonConsistency(parsed);
+
+    if (consistencyCheck.valid) {
+      isJsonValid.value = true;
+      jsonValidationError.value = '';
+
+      // Create table structure with headers, processed data, and unique parents
+      const { headers, processedData, parentValues } = buildTableStructure(dataArray);
+      finalColumns.value = headers;
+      finalData.value = processedData;
+      uniqueParents.value = parentValues;
+
+      console.log("Unique parents:", uniqueParents.value);
+      console.log("Columns:", headers);
+      console.log("Sample data:", processedData[0]);
+    } else {
+      isJsonValid.value = false;
+      jsonValidationError.value = consistencyCheck.error;
+    }
+  } catch (error) {
+    isJsonValid.value = false;
+    jsonValidationError.value = 'Error in JSON code. Please check syntax.';
+  }
+};
+
+// Validate all form data when disabled button is clicked
+const validateAll = () => {
+  // Check if JSON validation needs to be run
+  if (!isJsonValid.value) {
+    validateAndPreviewJson();
+  }
+
+  // Show a notification about what's missing
+  if (!reportTitle.value) {
+    $q.notify({
+      color: 'negative',
+      message: 'Please fill in the required Report Title field',
+      icon: 'error'
+    });
+  } else if (!isJsonValid.value) {
+    $q.notify({
+      color: 'negative',
+      message: 'Please validate your data before generating a report',
+      icon: 'error'
+    });
+  } else if (includeNotes.value && (!notesTitle.value || !notesData.value)) {
+    $q.notify({
+      color: 'negative',
+      message: 'Please complete the notes section or disable it',
+      icon: 'error'
+    });
+  }
+};
 </script>
 
 <style scoped>
-.card-actions {
-  display: flex;
-  justify-content: center;
+.q-card {
+  border-radius: 8px;
+}
+
+.scrollable-textarea {
+  max-height: 200px;
+}
+
+/* Make textareas scrollable with fixed height */
+.scrollable-textarea :deep(.q-field__native) {
+  max-height: 200px;
+  overflow-y: auto !important;
+}
+
+/* Ensure the textarea doesn't grow beyond the container */
+.scrollable-textarea :deep(textarea) {
+  resize: none !important;
+  overflow-y: auto !important;
+}
+
+/* Code example styling */
+.code-example {
+  background-color: #f5f5f5;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  margin: 0;
 }
 </style>

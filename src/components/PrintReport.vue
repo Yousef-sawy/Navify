@@ -7,7 +7,7 @@
       :label="buttonLabel || 'Export PDF'"
       :flat="buttonFlat"
       :outline="buttonOutline"
-      :round="buttonRound"
+
       :size="buttonSize || 'md'"
       @click="openPrintDialog"
     />
@@ -173,13 +173,24 @@ const props = defineProps({
   notes_data: String,
 
   // Button appearance
-  buttonColor: String,
-  buttonIcon: String,
-  buttonLabel: String,
+    buttonColor: {
+    type: String,
+    default: 'primary'
+  },
+  buttonIcon: {
+    type: String,
+    default: 'picture_as_pdf'
+  },
+  buttonLabel: {
+    type: String,
+    default: 'Generate Report'
+  },
   buttonFlat: Boolean,
   buttonOutline: Boolean,
-  buttonRound: Boolean,
-  buttonSize: String,
+  buttonSize: {
+    type: String,
+    default: 'md'
+  },
 
   // Custom formatters for table data
   formatters: Object,
@@ -324,8 +335,7 @@ const formatDate = (date, includeTime = false) => {
   }
 }
 
-// Arabic Data Formatting Functions
-// Format dates in Arabic style but using Gregorian calendar
+
 const formatDateArabic = (date) => {
   if (!date) return '-'
   const d = new Date(date)
@@ -339,7 +349,6 @@ const formatDateArabic = (date) => {
   })
 }
 
-// Format date and time in Arabic style but using Gregorian calendar
 const formatDateTimeArabic = (date) => {
   if (!date) return '-'
   const d = new Date(date)
@@ -356,7 +365,6 @@ const formatDateTimeArabic = (date) => {
   })
 }
 
-// Format numbers in Arabic numerals
 const formatNumberArabic = (num) => {
   if (num === null || num === undefined) return ''
 
@@ -364,7 +372,6 @@ const formatNumberArabic = (num) => {
   return Number(num).toLocaleString('ar')
 }
 
-// Format currency in Arabic style
 const formatCurrencyArabic = (amount, currency = 'SAR') => {
   if (amount === null || amount === undefined) return ''
 
@@ -377,7 +384,6 @@ const formatCurrencyArabic = (amount, currency = 'SAR') => {
   })
 }
 
-// Format percentage in Arabic style
 const formatPercentageArabic = (value) => {
   if (value === null || value === undefined) return ''
 
@@ -469,7 +475,6 @@ const exportAsPDF = async () => {
     doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('Amiri-Regular.ttf', 'Amiri', 'bold');
 
-    // Set Amiri as the default font for the entire document
     doc.setFont('Amiri');
 
     // Global page margins
@@ -484,14 +489,11 @@ const exportAsPDF = async () => {
     const pageHeight = doc.internal.pageSize.height;
     const contentWidth = pageWidth - margin.left - margin.right;
 
-    // Determine if document is RTL
     const isRTL = props.rtl === true;
-    // Determine if we should use Arabic formatting
     const useArabicFormat = isRTL || hasArabic(props.title || '');
 
     // Helper function to render text with appropriate alignment based on language
     const renderText = (text, x, y, options = {}) => {
-      // Check if the text contains Arabic characters
       const textIsRTL = isRTL || hasArabic(text);
 
       // Set default alignment based on text direction
@@ -692,7 +694,7 @@ const exportAsPDF = async () => {
         return effectiveColumns.value.map(col => {
           let value = row[col.name];
 
-                    if (props.formatters && props.formatters[col.name]) {
+          if (props.formatters && props.formatters[col.name]) {
             // Use custom formatter if provided
             value = props.formatters[col.name].formatter(value, row);
           } else if (col.format) {
@@ -839,6 +841,11 @@ const exportAsPDF = async () => {
     });
   }
 }
+
+////
+/////
+//
+///
 </script>
 
 <style scoped>

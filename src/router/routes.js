@@ -8,6 +8,7 @@ const routes = [
       { path: 'test', component: () => import('pages/TestPage.vue') },
       { path: 'feedback', component: () => import('pages/FeedbackPage.vue') },
       { path: 'print', component: () => import('pages/TestPrintPage.vue') },
+      // { path: 'playground', component: () => import('pages/PlayGround.vue') },
 
 
 
