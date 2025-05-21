@@ -2,41 +2,80 @@
   <div class="q-pa-md">
     <q-card class="q-mb-md">
       <q-card-section>
-        <div class="text-h6">Report Information</div>
-        <p class="text-caption q-mb-md">Enter the basic information for your report header and title.</p>
+        <div class="text-h6">{{ t('print.sections.reportInfo.title') }}</div>
+        <p class="text-caption q-mb-md">{{ t('print.sections.reportInfo.description') }}</p>
 
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-4">
             <q-input
               v-model="reportTitle"
-              label="Report Title *"
-              :rules="[val => !!val || 'Title is required']"
+              :label="t('print.inputs.reportTitle.label')"
+              :rules="[val => !!val || t('print.inputs.reportTitle.rules.required')]"
               outlined
               dense
               class="q-mb-md"
-              hint="The main title that appears at the top of the report"
+              :hint="t('print.inputs.reportTitle.hint')"
+              :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
             />
           </div>
           <div class="col-12 col-md-4">
             <q-input
               v-model="reportSubtitle"
-              label="Report Subtitle"
+              :label="t('print.inputs.reportSubtitle.label')"
               outlined
               dense
               class="q-mb-md"
-              hint="Optional secondary title below the main title"
+              :hint="t('print.inputs.reportSubtitle.hint')"
+              :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
             />
           </div>
           <div class="col-12 col-md-4">
             <q-input
               v-model="tableTitle"
-              label="Table Title"
-              placeholder="Data Table"
+              :label="t('print.inputs.tableTitle.label')"
+              :placeholder="t('print.inputs.tableTitle.placeholder')"
               outlined
               dense
               class="q-mb-md"
-              hint="Heading that appears directly above the data table"
+              :hint="t('print.inputs.tableTitle.hint')"
+              :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
             />
+          </div>
+        </div>
+
+        <!-- Notes section integrated into the top card -->
+        <q-separator class="q-my-md" />
+
+        <div class="row items-center">
+          <div class="text-subtitle1 q-mb-sm">{{ t('print.sections.notes.title') }}</div>
+          <q-space />
+          <q-toggle v-model="includeNotes" :label="t('print.inputs.notesToggle.label')" />
+        </div>
+
+        <div v-if="includeNotes">
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-4">
+              <q-input
+                v-model="notesTitle"
+                :label="t('print.inputs.notesTitle.label')"
+                outlined
+                dense
+                class="q-mb-md"
+                :hint="t('print.inputs.notesTitle.hint')"
+                :rules="[val => !!val || t('print.inputs.notesTitle.rules.required')]"
+              />
+            </div>
+            <div class="col-12 col-md-8">
+              <q-input
+                v-model="notesData"
+                type="textarea"
+                :label="t('print.inputs.notesContent.label')"
+                outlined
+                class="scrollable-textarea q-mb-md"
+                :hint="t('print.inputs.notesContent.hint')"
+                :rules="[val => !!val || t('print.inputs.notesContent.rules.required')]"
+              />
+            </div>
           </div>
         </div>
       </q-card-section>
@@ -44,111 +83,83 @@
 
     <q-card class="q-mb-md">
       <q-card-section>
-        <div class="text-h6">Table Data</div>
-        <p class="text-caption q-mb-md">Enter your data in JSON format. The system will automatically detect all fields across your entries.</p>
+        <div class="text-h6">{{ t('print.sections.tableData.title') }}</div>
+        <p class="text-caption q-mb-md">{{ t('print.sections.tableData.description') }}</p>
 
-        <!-- JSON Input Method -->
+        <!-- JSON Input Method with automatic validation -->
         <q-input
           v-model="jsonData"
           type="textarea"
           filled
           class="scrollable-textarea q-mb-md"
-          label="Enter your data in JSON format"
-          hint='Single object or array of objects. Example: [{ "id": 1, "name": "John" }]'
+          :label="t('print.inputs.jsonData.label')"
+          :hint="t('print.inputs.jsonData.hint')"
           :rules="[
-            val => !!val || 'JSON data is required',
-            val => validateJson(val) || 'Invalid JSON format'
+            val => !!val || t('print.inputs.jsonData.rules.required'),
+            val => validateJson(val) || t('print.inputs.jsonData.rules.invalid')
           ]"
+          :class="['subject-input', { 'rtl-input': $i18n.locale === 'ar' }]"
         />
         <div class="q-mb-md">
-          <q-btn
-            color="primary"
-            label="Validate JSON"
-            @click="validateAndPreviewJson"
-            class="q-mr-sm"
-          />
-          <q-badge v-if="isJsonValid === true" color="positive" label="Valid JSON" />
-          <q-badge v-else-if="isJsonValid === false" color="negative" label="Invalid JSON" />
+          <q-badge v-if="isJsonValid === true" color="positive" :label="t('print.badges.validJson')" />
+          <q-badge v-else-if="isJsonValid === false" color="negative" :label="t('print.badges.invalidJson')" />
         </div>
         <div v-if="jsonValidationError" class="text-negative q-mb-md">
           {{ jsonValidationError }}
         </div>
         <q-card flat bordered class="q-mt-md bg-grey-1">
           <q-card-section class="q-py-sm">
-            <div class="text-subtitle2">JSON Format Requirements:</div>
+            <div class="text-subtitle2">JSON Format Requirements</div>
             <ul class="q-mb-none">
-              <li>Property names must be in double quotes: <code>"name": "value"</code></li>
-              <li>Strings must use double quotes: <code>"John"</code> not <code>'John'</code></li>
-              <li>No trailing commas: <code>[1, 2]</code> not <code>[1, 2,]</code></li>
-              <li>IDs must be unique within the dataset</li>
-              <li>Missing fields in objects will display as "undefined" in the table</li>
+              <li v-for="(requirement, index) in jsonRequirements" :key="index" v-html="requirement"></li>
             </ul>
           </q-card-section>
         </q-card>
       </q-card-section>
     </q-card>
 
-    <q-card class="q-mb-md">
-      <q-card-section>
-        <div class="row items-center">
-          <div class="text-h6">Notes Section</div>
-          <q-space />
-          <q-toggle v-model="includeNotes" label="Include Notes" />
+    <!-- Export button section with validation messages -->
+    <div class="row justify-between items-center q-mt-md">
+      <div class="validation-messages" v-if="!isFormValid">
+        <div v-if="!reportTitle" class="text-negative q-mb-xs">
+          <q-icon name="error_outline" size="xs" class="q-mr-xs" />
+          {{ t('print.notifications.missingTitle') }}
         </div>
-
-        <p class="text-caption q-mb-md" v-if="includeNotes">Add optional notes or explanations to appear at the bottom of the report.</p>
-
-        <div v-if="includeNotes" class="row q-col-gutter-md">
-          <div class="col-12 col-md-4">
-            <q-input
-              v-model="notesTitle"
-              label="Notes Title"
-              outlined
-              dense
-              class="q-mb-md"
-              hint="The heading for your notes section"
-              :rules="[val => !!val || 'Notes title is required when notes are enabled']"
-            />
-          </div>
-          <div class="col-12 col-md-8">
-            <q-input
-              v-model="notesData"
-              type="textarea"
-              label="Notes Content"
-              outlined
-              class="scrollable-textarea q-mb-md"
-              hint="Text content for your notes (supports multiple paragraphs)"
-              :rules="[val => !!val || 'Notes content is required when notes are enabled']"
-            />
-          </div>
+        <div v-if="isJsonValid === false || finalData.length === 0" class="text-negative q-mb-xs">
+          <q-icon name="error_outline" size="xs" class="q-mr-xs" />
+          {{ t('print.notifications.invalidData') }}
         </div>
-      </q-card-section>
-    </q-card>
+        <div v-if="includeNotes && (!notesTitle || !notesData)" class="text-negative q-mb-xs">
+          <q-icon name="error_outline" size="xs" class="q-mr-xs" />
+          {{ t('print.notifications.incompleteNotes') }}
+        </div>
+      </div>
 
-    <!-- Export button section -->
-    <div class="row justify-end q-mt-md">
-      <div v-if="isFormValid">
-        <PDFExport
-          :title="reportTitle"
-          :subtitle="reportSubtitle"
-          :tableTitle="effectiveTableTitle"
-          :tableData="finalData"
-          :columns="finalColumns"
-          :notesTitle="includeNotes ? notesTitle : ''"
-          :notes_data="includeNotes ? notesData : ''"
-          :rtl="true"
-          :excelFilename="reportTitle ? `${reportTitle.replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.xlsx` : null"
+      <q-space />
+
+      <div>
+        <div v-if="isFormValid">
+          <PDFExport
+            :title="reportTitle"
+            :subtitle="reportSubtitle"
+            :tableTitle="effectiveTableTitle"
+            :tableData="finalData"
+            :columns="finalColumns"
+            :notesTitle="includeNotes ? notesTitle : ''"
+            :notes_data="includeNotes ? notesData : ''"
+            :rtl="$i18n.locale === 'ar'"
+            :excelFilename="reportTitle ? `${reportTitle.replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.xlsx` : null"
+          />
+        </div>
+        <q-btn
+          v-else
+          color="primary"
+          :label="t('print.buttons.exportPdf')"
+          icon="file_upload"
+          disabled
+          class="q-mr-sm"
         />
       </div>
-      <q-btn
-        v-else
-        color="primary"
-        label="Export PDF Report"
-        icon="picture_as_pdf"
-        disabled
-        class="q-mr-sm"
-        @click="validateAll"
-      />
     </div>
   </div>
 </template>
@@ -156,9 +167,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useQuasar } from 'quasar';
+import { useI18n } from 'vue-i18n';
 import PDFExport from '../components/PrintReport.vue';
 
 const $q = useQuasar();
+const { t } = useI18n();
 
 const reportTitle = ref('');
 const reportSubtitle = ref('');
@@ -175,13 +188,22 @@ const finalData = ref([]);
 const finalColumns = ref([]);
 const uniqueParents = ref([]);
 
+// Hardcoded requirements
+const jsonRequirements = [
+  'Property names must be in double quotes: <code>"name": "value"</code>',
+  'Strings must use double quotes: <code>"John"</code> not <code>\'John\'</code>',
+  'No trailing commas: <code>[1, 2]</code> not <code>[1, 2,]</code>',
+  'IDs must be unique within the dataset',
+  'Missing fields in objects will display as "undefined" in the table'
+];
+
 const effectiveTableTitle = computed(() => {
-  return tableTitle.value || 'Data Table';
+  return tableTitle.value || t('print.inputs.tableTitle.default');
 });
 
 const isFormValid = computed(() => {
-  const basicInfoValid = !!reportTitle.value; // Only report title is required
-  const dataValid = isJsonValid.value === true;
+  const basicInfoValid = !!reportTitle.value;
+  const dataValid = isJsonValid.value === true && finalData.value.length > 0;
   const notesValid = !includeNotes.value || (includeNotes.value && !!notesTitle.value && !!notesData.value);
 
   return basicInfoValid && dataValid && notesValid;
@@ -208,7 +230,7 @@ const hasDuplicateIds = (data) => {
   for (const item of data) {
     if (item.id !== undefined) {
       if (ids.has(item.id)) {
-        return true; // Found duplicate ID
+        return true;
       }
       ids.add(item.id);
     }
@@ -219,25 +241,17 @@ const hasDuplicateIds = (data) => {
 
 // Validate basic JSON data only check for duplicates
 const validateJsonConsistency = (parsedData) => {
-  // Convert single object to array for consistent processing
   const data = Array.isArray(parsedData) ? parsedData : [parsedData];
 
-  // if (data.length === 0) {
-  //   return { valid: false, error: 'Data cannot be empty' };
-  // }
-
-  // Check for duplicate IDs
   if (hasDuplicateIds(data)) {
-    return { valid: false, error: 'Data contains duplicate ID values' };
+    return { valid: false, error: t('print.errors.duplicateIds') };
   }
 
-  // No more strict field validation - allowing objects with different fields
   return { valid: true };
 };
 
-// Process data and normalize fields across all objects
+// collect all possible fields across all objects
 const buildTableStructure = (dataArray) => {
-  // First pass: collect all possible fields across all objects
   const allFields = new Set();
   dataArray.forEach(item => {
     Object.keys(item).forEach(key => {
@@ -253,16 +267,6 @@ const buildTableStructure = (dataArray) => {
     sortable: true
   }));
 
-  // Collect unique parent values if parent field exists
-  const parentValues = [];
-  dataArray.forEach(item => {
-    if (item.parent !== undefined && item.parent !== null && item.parent !== "") {
-      if (!parentValues.includes(item.parent)) {
-        parentValues.push(item.parent);
-      }
-    }
-  });
-
   // Process data to ensure all objects have all fields (with "undefined" for missing fields)
   const processedData = dataArray.map(item => {
     const newItem = { ...item };
@@ -272,7 +276,6 @@ const buildTableStructure = (dataArray) => {
       if (!newItem.hasOwnProperty(field)) {
         newItem[field] = "undefined";
       } else if (newItem[field] === null || newItem[field] === "") {
-        // Also replace null or empty values with "undefined" text
         newItem[field] = "undefined";
       }
     });
@@ -280,11 +283,19 @@ const buildTableStructure = (dataArray) => {
     return newItem;
   });
 
-  return { headers, processedData, parentValues };
+  return { headers, processedData };
 };
 
 // Validate and process JSON data
 const validateAndPreviewJson = () => {
+  if (!jsonData.value.trim()) {
+    isJsonValid.value = null;
+    jsonValidationError.value = '';
+    finalData.value = [];
+    finalColumns.value = [];
+    return;
+  }
+
   try {
     let jsonToValidate = jsonData.value;
 
@@ -292,7 +303,9 @@ const validateAndPreviewJson = () => {
       JSON.parse(jsonToValidate);
     } catch (e) {
       isJsonValid.value = false;
-      jsonValidationError.value = 'Invalid JSON format. Please check for proper syntax including quotes and commas.';
+      jsonValidationError.value = t('print.errors.jsonSyntax');
+      finalData.value = [];
+      finalColumns.value = [];
       return;
     }
 
@@ -305,62 +318,52 @@ const validateAndPreviewJson = () => {
       jsonValidationError.value = '';
 
       // Create table structure with headers, processed data, and unique parents
-      const { headers, processedData, parentValues } = buildTableStructure(dataArray);
+      const { headers, processedData } = buildTableStructure(dataArray);
       finalColumns.value = headers;
       finalData.value = processedData;
-      uniqueParents.value = parentValues;
-
-      console.log("Unique parents:", uniqueParents.value);
-      console.log("Columns:", headers);
-      console.log("Sample data:", processedData[0]);
     } else {
       isJsonValid.value = false;
       jsonValidationError.value = consistencyCheck.error;
+      finalData.value = [];
+      finalColumns.value = [];
     }
   } catch (error) {
     isJsonValid.value = false;
-    jsonValidationError.value = 'Error in JSON code. Please check syntax.';
+    jsonValidationError.value = t('print.errors.jsonGeneral');
+    finalData.value = [];
+    finalColumns.value = [];
   }
 };
 
-// Validate all form data when disabled button is clicked
-const validateAll = () => {
-  if (!isJsonValid.value) {
+// Add a watcher to automatically validate JSON when it changes
+watch(jsonData, () => {
+  // Add a small delay to avoid validating during typing
+  const debounceTimeout = setTimeout(() => {
     validateAndPreviewJson();
-  }
+  },);
 
-  if (!reportTitle.value) {
-    $q.notify({
-      color: 'negative',
-      message: 'Please fill in the required Report Title field',
-      icon: 'error'
-    });
-  } else if (!isJsonValid.value) {
-    $q.notify({
-      color: 'negative',
-      message: 'Please validate your data before generating a report',
-      icon: 'error'
-    });
-  } else if (includeNotes.value && (!notesTitle.value || !notesData.value)) {
-    $q.notify({
-      color: 'negative',
-      message: 'Please complete the notes section or disable it',
-      icon: 'error'
-    });
-  }
-};
+  return () => clearTimeout(debounceTimeout);
+}, { deep: true });
+
+// Watch notes fields to update form validity
+watch([includeNotes, notesTitle, notesData, reportTitle], () => {
+});
+
+const switchLanguage = (lang) => {
+  locale.value = lang
+  localStorage.setItem('selectedLanguage', lang)
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}
 </script>
 
 <style scoped>
-.q-card {
-  border-radius: 8px;
-}
-
 .scrollable-textarea {
   max-height: 200px;
 }
 
 .scrollable-textarea :deep(.q-field__native) {
+  resize: vertical;
+  min-height: 100px;
   max-height: 200px;
   overflow-y: auto !important;
 }
@@ -368,6 +371,10 @@ const validateAll = () => {
 .scrollable-textarea :deep(textarea) {
   resize: none !important;
   overflow-y: auto !important;
+}
+
+.q-card {
+  border-radius: 8px;
 }
 
 .code-example {
@@ -380,4 +387,61 @@ const validateAll = () => {
   overflow-x: auto;
   margin: 0;
 }
+
+.validation-messages {
+  font-size: 0.95rem;
+  max-width: 70%;
+
+}
+
+.validation-messages .text-negative {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 </style>
+<style>
+
+/* RTL input styling */
+.rtl-input.q-field--outlined .q-field__control {
+  direction: rtl;
+}
+
+.rtl-input .q-field__native,
+.rtl-input .q-field__prefix,
+.rtl-input .q-field__suffix,
+.rtl-input .q-field__input {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-input .q-field__label {
+  right: unset;
+  left: unset;
+  transform-origin: right top;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Fix for label position in outlined mode */
+.rtl-input.q-field--outlined.q-field--float .q-field__label {
+  transform: translateY(-50%) scale(0.75);
+  right: 8px;
+}
+
+/* When the field is not floating (empty) */
+.rtl-input.q-field--outlined:not(.q-field--float) .q-field__label {
+  right: 10px;
+}
+
+/* Icon positioning */
+.rtl-input .q-field__prepend {
+  padding-right: 0;
+  padding-left: 16px;
+}
+
+
+
+</style>
+
+

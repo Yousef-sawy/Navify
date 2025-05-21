@@ -3,6 +3,8 @@ import homepage from './homepage'
 import navigationPage from './navigationpage'
 import test from './test'
 import feedback from './feedback'
+import headertranslations from './headertranslations'
+import print from './printPage'
 
 export default {
   failed: 'Action failed',
@@ -11,5 +13,7 @@ export default {
   ...homepage,
   ...navigationPage,
   ...test,
-  ...feedback
+  ...feedback,
+  ...headertranslations,
+  ...print,
 }
